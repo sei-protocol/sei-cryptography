@@ -37,7 +37,7 @@ jobs:
             ~/.cache/go-build
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
       - name: Run unit tests
-        run: go test -mod=readonly -race -timeout 5m -tags='ledger test_ledger_mock'
+        run: go test -mod=readonly -race -timeout 5m ./...
 
   unit-test-check:
     name: Unit Test Check

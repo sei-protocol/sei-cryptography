@@ -24,22 +24,26 @@ func TestAESKeyGeneration(t *testing.T) {
 
 	// Test that aesPK is deterministically generated
 	aesPKAgain, err := GetAesKey(*privateKey, denom)
+	require.Nil(t, err, "Should not have error here")
 	require.Equal(t, aesPK, aesPKAgain, "PK should be deterministically generated")
 
 	// Test that changing the salt should generate a different key
 	altDenom := "factory/sei1239081236470/testToken1"
 	aesPKDiffSalt, err := GetAesKey(*privateKey, altDenom)
+	require.Nil(t, err, "Should not have error here")
 	require.NotEqual(t, aesPK, aesPKDiffSalt, "PK should different for different salt")
 
 	// Test same thing for salt of same length
 	altDenom = "factory/sei1239081236470/testTokeN"
 	aesPKDiffSalt, err = GetAesKey(*privateKey, altDenom)
+	require.Nil(t, err, "Should not have error here")
 	require.NotEqual(t, aesPK, aesPKDiffSalt, "PK should different for different salt")
 
 	// Test that different privateKey should generate different PK
 	altPrivateKey, err := GenerateKey()
 	require.Nil(t, err, "Should not have error here")
 	aesPKDiffPK, err := GetAesKey(*altPrivateKey, altDenom)
+	require.Nil(t, err, "Should not have error here")
 	require.NotEqual(t, aesPK, aesPKDiffPK, "PK should different for different ESDCA Private Key")
 }
 
