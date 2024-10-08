@@ -32,30 +32,10 @@ func NewTwistedElgamal(curve *curves.Curve) *TwistedElGamal {
 
 // Encrypt encrypts a message using the public key pk.
 func (teg TwistedElGamal) Encrypt(pk curves.Point, message uint64) (*Ciphertext, curves.Scalar, error) {
-	// Fixed base points G and H
-	H := teg.GetH()
-	G := teg.GetG()
-
-	// Convert message x (big.Int) to a scalar on the elliptic curve
-	bigIntMessage := new(big.Int).SetUint64(message)
-	x, _ := teg.curve.Scalar.SetBigInt(bigIntMessage)
-
 	// Generate a random scalar r
 	randomFactor := teg.curve.Scalar.Random(crand.Reader)
 
-	// Compute the Pedersen commitment: C = r * H + x * G
-	rH := H.Mul(randomFactor) // r * H
-	xG := G.Mul(x)            // x * G
-	C := rH.Add(xG)           // C = r * H + x * G
-
-	// Compute the decryption handle: D = r * P
-	D := pk.Mul(randomFactor) // D = r * P
-	ciphertext := Ciphertext{
-		C: C,
-		D: D,
-	}
-
-	return &ciphertext, randomFactor, nil
+	return teg.EncryptWithRand(pk, message, randomFactor)
 }
 
 // EncryptWithRand encrypts a message using the public key pk and a given random factor.
@@ -86,6 +66,14 @@ func (teg TwistedElGamal) EncryptWithRand(pk curves.Point, message uint64, rando
 // Decrypt decrypts the ciphertext ct using the private key sk = s.
 // MaxBits denotes the maximum size of the decrypted message. The lower this can be set, the faster we can decrypt the message.
 func (teg TwistedElGamal) Decrypt(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits) (uint64, error) {
+	if sk == nil {
+		return 0, fmt.Errorf("invalid private key")
+	}
+
+	if ct == nil || ct.C == nil || ct.D == nil {
+		return 0, fmt.Errorf("invalid ciphertext")
+	}
+
 	G := teg.GetG()
 
 	// Compute s * D

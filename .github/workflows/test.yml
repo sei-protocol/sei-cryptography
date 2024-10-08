@@ -66,7 +66,7 @@ jobs:
 
       - name: Run general unit tests
         run: |
-          go test -mod=readonly -race -timeout 5m $PACKAGES
+          go test -mod=readonly -race -v -timeout 5m $PACKAGES
 
   # Define a matrix for ElGamal package test subsets
   elgamal-tests:
@@ -78,7 +78,8 @@ jobs:
           'EncryptionDecryption',
           'KeyGeneration',
           '48BitEncryptionDecryption',
-          'AddCiphertext'
+          'AddCiphertext',
+          'TwistedElGamal'
         ]
     steps:
       - name: Checkout repository
@@ -103,7 +104,7 @@ jobs:
           cd pkg/encryption/elgamal
           mapfile -t TESTS < <(go list -f '{{.Dir}}/*.go' ./...)
           # Modify the run pattern based on your test naming conventions
-          go test -mod=readonly -race -timeout 20m -run ^Test${{ matrix.test_group }} ./...
+          go test -mod=readonly -race -timeout 20m -run ^Test${{ matrix.test_group }} -v ./...
 
   unit-test-check:
     name: Unit Test Check

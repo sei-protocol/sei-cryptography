@@ -176,3 +176,58 @@ func TestAddCiphertext(t *testing.T) {
 	_, err = eg.Decrypt(altKeys.PrivateKey, ciphertextSum, MaxBits32)
 	require.Error(t, err, "Ciphertext should be undecodable using either private key")
 }
+
+func TestTwistedElGamal_InvalidCiphertext(t *testing.T) {
+	denom := "factory/sei1239081236472sd/testToken"
+	curve := curves.ED25519()
+	eg := NewTwistedElgamal(curve)
+	privateKey, _ := GenerateKey()
+	keys, _ := eg.KeyGen(*privateKey, denom)
+
+	invalidCt := &Ciphertext{}
+
+	decrypted, err := eg.Decrypt(keys.PrivateKey, invalidCt, MaxBits48)
+	require.Error(t, err, "Decryption should fail for invalid ciphertext")
+	require.Equal(t, "invalid ciphertext", err.Error())
+	require.Zero(t, decrypted, "Decrypted value should be zero for invalid ciphertext")
+}
+
+func TestTwistedElGamal_NilPrivateKey(t *testing.T) {
+	denom := "factory/sei1239081236472sd/testToken"
+	curve := curves.ED25519()
+	eg := NewTwistedElgamal(curve)
+
+	// Generate a valid key pair for comparison
+	privateKey, _ := GenerateKey()
+	keys, _ := eg.KeyGen(*privateKey, denom)
+
+	// Encrypt a value with a valid public key
+	value := uint64(12345)
+	ciphertext, _, err := eg.Encrypt(keys.PublicKey, value)
+	require.Nil(t, err, "Encryption should not fail with a valid public key")
+
+	// Attempt to decrypt with a nil private key
+	decrypted, err := eg.Decrypt(nil, ciphertext, MaxBits32)
+	require.Error(t, err, "Decryption should fail with a nil private key")
+	require.Equal(t, "invalid private key", err.Error())
+	require.Zero(t, decrypted, "Decrypted value should be zero with a nil private key")
+}
+
+func TestTwistedElGamalWithRand_EncryptDecryptWithRand(t *testing.T) {
+	denom := "factory/sei1239081236472sd/testToken"
+	curve := curves.ED25519()
+	eg := NewTwistedElgamal(curve)
+
+	// Generate a valid key pair for comparison
+	privateKey, _ := GenerateKey()
+	keys, _ := eg.KeyGen(*privateKey, denom)
+
+	message := uint64(555555555)
+	randomFactor := curve.Scalar.Random(rand.Reader)
+	ct, _, err := eg.EncryptWithRand(keys.PublicKey, message, randomFactor)
+	require.NoError(t, err, "Encryption with randomFactor should not fail")
+
+	decrypted, err := eg.DecryptLargeNumber(keys.PrivateKey, ct, MaxBits48)
+	require.NoError(t, err, "Decryption should not fail")
+	require.Equal(t, message, decrypted, "Decrypted message should match original")
+}
