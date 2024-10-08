@@ -40,6 +40,14 @@ func (teg TwistedElGamal) Encrypt(pk curves.Point, message uint64) (*Ciphertext,
 
 // EncryptWithRand encrypts a message using the public key pk and a given random factor.
 func (teg TwistedElGamal) EncryptWithRand(pk curves.Point, message uint64, randomFactor curves.Scalar) (*Ciphertext, curves.Scalar, error) {
+	if pk == nil {
+		return nil, nil, fmt.Errorf("invalid public key")
+	}
+
+	if randomFactor == nil {
+		return nil, nil, fmt.Errorf("invalid random factor")
+	}
+
 	// Fixed base points G and H
 	H := teg.GetH()
 	G := teg.GetG()

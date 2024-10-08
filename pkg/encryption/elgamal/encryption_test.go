@@ -125,6 +125,11 @@ func Test48BitEncryptionDecryption(t *testing.T) {
 	decrypted, err = eg.DecryptLargeNumber(keys.PrivateKey, ciphertext, MaxBits32)
 	require.Nil(t, err, "Should still have no error while decrypting")
 	require.Equal(t, value, decrypted, "Should still have the same value")
+
+	// Passing in an invalid maxBits should yield an error.
+	_, err = eg.DecryptLargeNumber(keys.PrivateKey, largeCiphertext, MaxBits(64))
+	require.Error(t, err, "Should be unable to decrypt using an invalid maxBits")
+	require.Equal(t, "maxBits must be at most 48, provided (64)", err.Error())
 }
 
 func TestAddCiphertext(t *testing.T) {
@@ -213,7 +218,7 @@ func TestTwistedElGamal_NilPrivateKey(t *testing.T) {
 	require.Zero(t, decrypted, "Decrypted value should be zero with a nil private key")
 }
 
-func TestTwistedElGamalWithRand_EncryptDecryptWithRand(t *testing.T) {
+func TestTwistedElGamal_EncryptDecryptWithRand(t *testing.T) {
 	denom := "factory/sei1239081236472sd/testToken"
 	curve := curves.ED25519()
 	eg := NewTwistedElgamal(curve)
@@ -230,4 +235,66 @@ func TestTwistedElGamalWithRand_EncryptDecryptWithRand(t *testing.T) {
 	decrypted, err := eg.DecryptLargeNumber(keys.PrivateKey, ct, MaxBits48)
 	require.NoError(t, err, "Decryption should not fail")
 	require.Equal(t, message, decrypted, "Decrypted message should match original")
+}
+
+func TestTwistedElGamal_DecryptWithZeroBits(t *testing.T) {
+	denom := "factory/sei1239081236472sd/testToken"
+	curve := curves.ED25519()
+	eg := NewTwistedElgamal(curve)
+
+	// Generate a valid key pair for comparison
+	privateKey, _ := GenerateKey()
+	keys, _ := eg.KeyGen(*privateKey, denom)
+
+	message := uint64(555555555)
+	randomFactor := curve.Scalar.Random(rand.Reader)
+	ct, _, err := eg.EncryptWithRand(keys.PublicKey, message, randomFactor)
+	require.NoError(t, err, "Encryption with randomFactor should not fail")
+
+	_, err = eg.DecryptLargeNumber(keys.PrivateKey, ct, MaxBits(0))
+	require.Error(t, err, "Decryption should fail")
+	require.Equal(t, "failed to find value", err.Error())
+}
+
+func TestTwistedElGamal_EncryptInvalidKey(t *testing.T) {
+	curve := curves.ED25519()
+	eg := NewTwistedElgamal(curve)
+
+	// Test with nil public key
+	_, _, err := eg.Encrypt(nil, 12345)
+	require.Error(t, err, "Encryption should fail with a nil public key")
+	require.Equal(t, "invalid public key", err.Error())
+}
+
+func TestTwistedElGamal_EncryptInvalidRandomFactor(t *testing.T) {
+	denom := "factory/sei1239081236472sd/testToken"
+	curve := curves.ED25519()
+	eg := NewTwistedElgamal(curve)
+
+	// Generate a valid key pair for comparison
+	privateKey, _ := GenerateKey()
+	keys, _ := eg.KeyGen(*privateKey, denom)
+
+	// Test with nil public key
+	_, _, err := eg.EncryptWithRand(keys.PublicKey, uint64(12345), nil)
+	require.Error(t, err, "Encryption should fail with nil random factor")
+	require.Equal(t, "invalid random factor", err.Error())
+}
+
+func TestTwistedElGamal_EncryptBoundaryValues(t *testing.T) {
+	denom := "factory/sei1239081236472sd/testToken"
+	curve := curves.ED25519()
+	eg := NewTwistedElgamal(curve)
+
+	// Generate a valid key pair for comparison
+	privateKey, _ := GenerateKey()
+	keys, _ := eg.KeyGen(*privateKey, denom)
+
+	// Test with the smallest possible value (0)
+	_, _, err := eg.Encrypt(keys.PublicKey, 0)
+	require.NoError(t, err, "Encryption should not fail with the smallest possible value")
+
+	// Test with the largest possible value (MaxUint64)
+	_, _, err = eg.Encrypt(keys.PublicKey, math.MaxUint64)
+	require.NoError(t, err, "Encryption should not fail with the largest possible value")
 }
