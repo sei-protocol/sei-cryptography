@@ -3,14 +3,16 @@ package elgamal
 import (
 	"crypto/ecdsa"
 	"crypto/sha256"
+	"io"
+
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"golang.org/x/crypto/hkdf"
-	"io"
 )
 
-// H is a random point on the eliptic curve that is unrelated to G.
+// H_STRING H is a random point on the elliptic curve that is unrelated to G.
 const H_STRING = "gPt25pi0eDphSiXWu0BIeIvyVATCtwhslTqfqvNhW2c"
 
+// KeyGen generates a new key pair for the Twisted ElGamal encryption scheme.
 func (teg TwistedElGamal) KeyGen(privateKey ecdsa.PrivateKey, denom string) (*KeyPair, error) {
 	// Fixed base point H
 	H := teg.GetH()
@@ -31,15 +33,22 @@ func (teg TwistedElGamal) KeyGen(privateKey ecdsa.PrivateKey, denom string) (*Ke
 	}, nil
 }
 
+// GetG returns the generator point G for the TwistedElGamal instance.
+// This is derived from the underlying elliptic curve's generator point.
 func (teg TwistedElGamal) GetG() curves.Point {
 	return curves.Point.Generator(teg.curve.Point)
 }
 
+// GetH returns the hashed point H for the TwistedElGamal instance.
+// The hash is computed using a predefined string constant H_STRING.
+// This point is used as part of the ElGamal encryption scheme.
 func (teg TwistedElGamal) GetH() curves.Point {
 	bytes := []byte(H_STRING)
 	return teg.curve.Point.Hash(bytes)
 }
 
+// getPrivateKey derives a private key for the ElGamal cryptosystem.
+// It takes an ECDSA private key and a denomination string to generate the scalar.
 func getPrivateKey(privateKey ecdsa.PrivateKey, denom string) (curves.Scalar, error) {
 	// Convert the ECDSA private key to bytes
 	privKeyBytes := privateKey.D.Bytes()

@@ -15,11 +15,12 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
+// GenerateKey generates a new ECDSA private key using the secp256k1 curve.
 func GenerateKey() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
 }
 
-// GetAesKey derives a 32-byte AES key using the provided ECDSA private key and denomination string.
+// GetAESKey derives a 32-byte AES key using the provided ECDSA private key and denomination string.
 // It employs HKDF with SHA-256, using the ECDSA private key bytes and a SHA-256 hash of the denom as salt.
 func GetAESKey(privKey ecdsa.PrivateKey, denom string) ([]byte, error) {
 	if privKey.D == nil {
@@ -48,7 +49,7 @@ func GetAESKey(privKey ecdsa.PrivateKey, denom string) ([]byte, error) {
 	return aesKey, nil
 }
 
-// Key must be a len 32 byte array for AES-256
+// EncryptAESGCM Key must be a len 32 byte array for AES-256
 func EncryptAESGCM(value uint64, key []byte) (string, error) {
 	// Create a GCM cipher mode instance
 	aesgcm, err := getCipher(key)
@@ -73,7 +74,7 @@ func EncryptAESGCM(value uint64, key []byte) (string, error) {
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
-// Key must be a len 32 byte array for AES-256
+// DecryptAESGCM Key must be a len 32 byte array for AES-256
 func DecryptAESGCM(ciphertextBase64 string, key []byte) (uint64, error) {
 	// Decode the Base64-encoded ciphertext
 	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextBase64)
@@ -105,7 +106,7 @@ func DecryptAESGCM(ciphertextBase64 string, key []byte) (uint64, error) {
 	return value, nil
 }
 
-// Creates the cipher from the key. Key must be a len 32 byte array for AES-256
+// getCipher Creates the cipher from the key. Key must be a len 32 byte array for AES-256
 func getCipher(key []byte) (cipher.AEAD, error) {
 	// Create a new AES cipher
 	block, err := aes.NewCipher(key)
