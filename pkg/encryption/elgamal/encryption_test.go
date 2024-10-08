@@ -63,28 +63,28 @@ func TestEncryptionDecryption(t *testing.T) {
 	altKeys, _ := eg.KeyGen(*altPrivateKey, denom)
 
 	// Happy Path
-	value := 108
-	ciphertext, _, err := eg.Encrypt(keys.PublicKey, uint64(value))
+	value := uint64(108)
+	ciphertext, _, err := eg.Encrypt(keys.PublicKey, value)
 	require.Nil(t, err, "Should have no error while encrypting")
 
 	decrypted, err := eg.Decrypt(keys.PrivateKey, ciphertext, MaxBits16)
 	require.Nil(t, err, "Should have no error while decrypting")
-	require.Equal(t, value, *decrypted, "Should have the same value")
+	require.Equal(t, value, decrypted, "Should have the same value")
 
 	decrypted, err = eg.Decrypt(keys.PrivateKey, ciphertext, MaxBits32)
 	require.Nil(t, err, "Should have no error while decrypting")
-	require.Equal(t, value, *decrypted, "Should have the same value")
+	require.Equal(t, value, decrypted, "Should have the same value")
 
 	// Using a different private key to decrypt should yield an error.
 	decryptedWrongly, err := eg.Decrypt(altKeys.PrivateKey, ciphertext, MaxBits32)
-	require.Nil(t, decryptedWrongly)
+	require.Zero(t, decryptedWrongly)
 	require.Error(t, err, "Should be unable to decrypt using the wrong private key")
 
 	// Test overflow behavior
 	ciphertextOverflow, _, err := eg.Encrypt(keys.PublicKey, math.MaxUint64)
 	require.Nil(t, err, "Should have no error while encrypting")
 	decryptedOverflow, err := eg.Decrypt(keys.PrivateKey, ciphertextOverflow, MaxBits32)
-	require.Nil(t, decryptedOverflow)
+	require.Zero(t, decryptedOverflow)
 	require.Error(t, err, "Should be unable to decrypt the invalid overflow value")
 }
 
@@ -99,32 +99,32 @@ func Test48BitEncryptionDecryption(t *testing.T) {
 	keys, _ := eg.KeyGen(*privateKey, denom)
 
 	// First decrypt a 32 bit number (sets up the decryptor for a later test)
-	value := 108092
-	ciphertext, _, err := eg.Encrypt(keys.PublicKey, uint64(value))
+	value := uint64(108092)
+	ciphertext, _, err := eg.Encrypt(keys.PublicKey, value)
 	require.Nil(t, err, "Should have no error while encrypting")
 
 	decrypted, err := eg.DecryptLargeNumber(keys.PrivateKey, ciphertext, MaxBits48)
 	require.Nil(t, err, "Should have no error while decrypting")
-	require.Equal(t, value, *decrypted, "Should have the same value")
+	require.Equal(t, value, decrypted, "Should have the same value")
 
 	// Create a large <48 bit number to be encrypted.
-	largeValue := 1 << 39
-	largeCiphertext, _, err := eg.Encrypt(keys.PublicKey, uint64(largeValue))
+	largeValue := uint64(1 << 39)
+	largeCiphertext, _, err := eg.Encrypt(keys.PublicKey, largeValue)
 	require.Nil(t, err, "Should have no error while encrypting")
 
 	largeDecrypted, err := eg.DecryptLargeNumber(keys.PrivateKey, largeCiphertext, MaxBits48)
 	require.Nil(t, err, "Should have no error while decrypting")
-	require.Equal(t, largeValue, *largeDecrypted, "Should have the same value")
+	require.Equal(t, largeValue, largeDecrypted, "Should have the same value")
 
 	// Attempting to decrypt with the wrong max bits set should yield an error.
 	decryptedWrongly, err := eg.DecryptLargeNumber(keys.PrivateKey, largeCiphertext, MaxBits32)
-	require.Nil(t, decryptedWrongly)
+	require.Zero(t, decryptedWrongly)
 	require.Error(t, err, "Should be unable to decrypt using the wrong maxBits")
 
 	// Decrypting the 48 bit value should not corrupt the map for 32 bit values.
 	decrypted, err = eg.DecryptLargeNumber(keys.PrivateKey, ciphertext, MaxBits32)
 	require.Nil(t, err, "Should still have no error while decrypting")
-	require.Equal(t, value, *decrypted, "Should still have the same value")
+	require.Equal(t, value, decrypted, "Should still have the same value")
 }
 
 func TestAddCiphertext(t *testing.T) {
@@ -140,11 +140,11 @@ func TestAddCiphertext(t *testing.T) {
 	altKeys, _ := eg.KeyGen(*altPrivateKey, denom)
 
 	// Happy Path
-	value1 := 30842
-	ciphertext1, _, err := eg.Encrypt(keys.PublicKey, uint64(value1))
+	value1 := uint64(30842)
+	ciphertext1, _, err := eg.Encrypt(keys.PublicKey, value1)
 	require.Nil(t, err, "Should have no error while encrypting")
 
-	value2 := 1901
+	value2 := uint64(1901)
 	ciphertext2, _, err := eg.Encrypt(keys.PublicKey, uint64(value2))
 	require.Nil(t, err, "Should have no error while encrypting")
 
@@ -154,7 +154,7 @@ func TestAddCiphertext(t *testing.T) {
 	decrypted, err := eg.Decrypt(keys.PrivateKey, ciphertextSum, MaxBits32)
 	require.Nil(t, err, "Should have no error while decrypting")
 	require.NotNil(t, decrypted)
-	require.Equal(t, value1+value2, *decrypted, "Decrypted sum should be correct")
+	require.Equal(t, value1+value2, decrypted, "Decrypted sum should be correct")
 
 	// Test that the add operation is commutative by adding in the other order.
 	ciphertextSumInv, err := AddCiphertext(ciphertext2, ciphertext1)
@@ -170,11 +170,9 @@ func TestAddCiphertext(t *testing.T) {
 	ciphertextSum, err = AddCiphertext(ciphertext1, ciphertext2alt)
 	require.Nil(t, err, "Even though ciphertexts were encoded using different keys, addition doesn't throw an error.")
 
-	decrypted, err = eg.Decrypt(keys.PrivateKey, ciphertextSum, MaxBits32)
-	require.Nil(t, decrypted)
+	_, err = eg.Decrypt(keys.PrivateKey, ciphertextSum, MaxBits32)
 	require.Error(t, err, "Ciphertext should be undecodable using either private key")
 
-	decrypted, err = eg.Decrypt(altKeys.PrivateKey, ciphertextSum, MaxBits32)
-	require.Nil(t, decrypted)
+	_, err = eg.Decrypt(altKeys.PrivateKey, ciphertextSum, MaxBits32)
 	require.Error(t, err, "Ciphertext should be undecodable using either private key")
 }

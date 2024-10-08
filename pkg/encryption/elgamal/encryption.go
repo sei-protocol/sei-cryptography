@@ -10,7 +10,7 @@ import (
 
 type TwistedElGamal struct {
 	curve   *curves.Curve
-	mapping map[string]int
+	mapping map[string]uint64
 
 	// Notes the sizes decrypted so far. This helps us know if the values we need are already in the map.
 	maxMapping map[MaxBits]bool
@@ -19,7 +19,7 @@ type TwistedElGamal struct {
 func NewTwistedElgamal(curve *curves.Curve) *TwistedElGamal {
 	var s ristretto.Point
 	s.SetZero()
-	mapping := make(map[string]int)
+	mapping := make(map[string]uint64)
 	maxMapping := make(map[MaxBits]bool)
 	mapping[s.String()] = 0
 
@@ -30,6 +30,7 @@ func NewTwistedElgamal(curve *curves.Curve) *TwistedElGamal {
 	}
 }
 
+// Encrypt encrypts a message using the public key pk.
 func (teg TwistedElGamal) Encrypt(pk curves.Point, message uint64) (*Ciphertext, curves.Scalar, error) {
 	// Fixed base points G and H
 	H := teg.GetH()
@@ -40,7 +41,7 @@ func (teg TwistedElGamal) Encrypt(pk curves.Point, message uint64) (*Ciphertext,
 	x, _ := teg.curve.Scalar.SetBigInt(bigIntMessage)
 
 	// Generate a random scalar r
-	randomFactor := curves.ED25519().Scalar.Random(crand.Reader)
+	randomFactor := teg.curve.Scalar.Random(crand.Reader)
 
 	// Compute the Pedersen commitment: C = r * H + x * G
 	rH := H.Mul(randomFactor) // r * H
@@ -57,6 +58,7 @@ func (teg TwistedElGamal) Encrypt(pk curves.Point, message uint64) (*Ciphertext,
 	return &ciphertext, randomFactor, nil
 }
 
+// EncryptWithRand encrypts a message using the public key pk and a given random factor.
 func (teg TwistedElGamal) EncryptWithRand(pk curves.Point, message uint64, randomFactor curves.Scalar) (*Ciphertext, curves.Scalar, error) {
 	// Fixed base points G and H
 	H := teg.GetH()
@@ -83,7 +85,7 @@ func (teg TwistedElGamal) EncryptWithRand(pk curves.Point, message uint64, rando
 
 // Decrypt decrypts the ciphertext ct using the private key sk = s.
 // MaxBits denotes the maximum size of the decrypted message. The lower this can be set, the faster we can decrypt the message.
-func (teg TwistedElGamal) Decrypt(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits) (*int, error) {
+func (teg TwistedElGamal) Decrypt(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits) (uint64, error) {
 	G := teg.GetG()
 
 	// Compute s * D
@@ -105,13 +107,13 @@ func (teg TwistedElGamal) Decrypt(sk curves.Scalar, ct *Ciphertext, maxBits MaxB
 
 	// Then iterate over all values of x_lo.
 	// If for some value x_lo, (x * G) - (x_lo * G) exists in the map above, then we satisfy the equation above and x = x_lo + 2^(maxBits/2) * x_hi
-	iMax := 1<<(uint(maxBits)/2) - 1
+	iMax := uint64(1<<(uint(maxBits)/2) - 1)
 
-	for i := 0; i < iMax; i++ {
+	for i := uint64(0); i < iMax; i++ {
 		// Attempt to brute-force x.
 		// We test all values of x_lo in (x * G) - x_lo * G
-		xValue := new(big.Int).SetUint64(uint64(i))
-		x, _ := curves.ED25519().Scalar.SetBigInt(xValue)
+		xValue := new(big.Int).SetUint64(i)
+		x, _ := teg.curve.Scalar.SetBigInt(xValue)
 
 		xLoG := G.Mul(x)
 		test := result.Sub(xLoG)
@@ -123,14 +125,14 @@ func (teg TwistedElGamal) Decrypt(sk curves.Scalar, ct *Ciphertext, maxBits MaxB
 				continue
 			}
 			xComputed := xHiMultiplied + i
-			return &xComputed, nil
+			return xComputed, nil
 		}
 	}
 
-	return nil, fmt.Errorf("could not find x")
+	return 0, fmt.Errorf("could not find x")
 }
 
-// Helper function to create large maps used by the decryption funciton.
+// updateIterMap Helper function to create large maps used by the decryption funciton.
 // Constructs the mapping of x_hi * 2^(maxBits/2) * G  : x_hi * (maxBits/2) for all values of x_hi.
 // This table can then be used to find x_lo.
 func (teg TwistedElGamal) updateIterMap(maxBits MaxBits) {
@@ -141,24 +143,25 @@ func (teg TwistedElGamal) updateIterMap(maxBits MaxBits) {
 		// Shift i left by shift bits to multiply by 2^shift
 		xhiMultipliedValue := i << shift
 		xhiMultiplied := new(big.Int).SetUint64(uint64(xhiMultipliedValue))
-		x_hi, _ := curves.ED25519().Scalar.SetBigInt(xhiMultiplied)
+		x_hi, _ := teg.curve.Scalar.SetBigInt(xhiMultiplied)
 
 		key := G.Mul(x_hi)
 		compressedKey := getCompressedKeyString(key)
-		teg.mapping[compressedKey] = xhiMultipliedValue
+		teg.mapping[compressedKey] = uint64(xhiMultipliedValue)
 	}
 }
 
-// Optimistically decrypt up to a 48 bit number.
-// Since creating the map for a 48 bit number takes a large amount of time, we work our way up in hopes that we find the answer before having to create the 48 bit map.
-func (teg TwistedElGamal) DecryptLargeNumber(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits) (*int, error) {
+// DecryptLargeNumber Optimistically decrypt up to a 48 bit number.
+// Since creating the map for a 48 bit number takes a large amount of time, we work our way up in hopes that we find
+// the answer before having to create the 48 bit map.
+func (teg TwistedElGamal) DecryptLargeNumber(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits) (uint64, error) {
 	if maxBits > MaxBits48 {
-		return nil, fmt.Errorf("maxBits must be at most 48, provided (%d)", maxBits)
+		return 0, fmt.Errorf("maxBits must be at most 48, provided (%d)", maxBits)
 	}
 	values := []MaxBits{MaxBits16, MaxBits32, MaxBits40, MaxBits48}
 	for _, bits := range values {
 		if bits > maxBits {
-			return nil, fmt.Errorf("Failed to find value")
+			return 0, fmt.Errorf("failed to find value")
 		}
 
 		res, err := teg.Decrypt(sk, ct, bits)
@@ -167,7 +170,7 @@ func (teg TwistedElGamal) DecryptLargeNumber(sk curves.Scalar, ct *Ciphertext, m
 		}
 	}
 
-	return nil, fmt.Errorf("Failed to find value")
+	return 0, fmt.Errorf("failed to find value")
 }
 
 func getCompressedKeyString(key curves.Point) string {
