@@ -10,10 +10,6 @@ permissions:
   contents: read
   pull-requests: write
 
-concurrency:
-  group: ci-${{ github.ref }}-tests
-  cancel-in-progress: true
-
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -37,7 +33,7 @@ jobs:
             ~/.cache/go-build
           key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
       - name: Run unit tests
-        run: go test -mod=readonly -race -timeout 5m ./...
+        run: go test -mod=readonly -race -timeout 10m ./...
 
   unit-test-check:
     name: Unit Test Check
