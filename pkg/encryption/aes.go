@@ -9,11 +9,25 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
-	"golang.org/x/crypto/hkdf"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"io"
+
+	"golang.org/x/crypto/hkdf"
 )
 
-func GetAesKey(privKey ecdsa.PrivateKey, denom string) ([]byte, error) {
+func GenerateKey() (*ecdsa.PrivateKey, error) {
+	return ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+}
+
+// GetAesKey derives a 32-byte AES key using the provided ECDSA private key and denomination string.
+// It employs HKDF with SHA-256, using the ECDSA private key bytes and a SHA-256 hash of the denom as salt.
+func GetAESKey(privKey ecdsa.PrivateKey, denom string) ([]byte, error) {
+	if privKey.D == nil {
+		return nil, fmt.Errorf("private key D is nil")
+	}
+	if len(denom) == 0 {
+		return nil, fmt.Errorf("denom is empty")
+	}
 	// Convert the ECDSA private key to bytes
 	privKeyBytes := privKey.D.Bytes()
 
@@ -28,7 +42,7 @@ func GetAesKey(privKey ecdsa.PrivateKey, denom string) ([]byte, error) {
 
 	_, err := io.ReadFull(hkdf, aesKey[:])
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
 	return aesKey, nil
