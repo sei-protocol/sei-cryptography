@@ -29,7 +29,7 @@ const (
 )
 
 // MarshalJSON for Ciphertext
-func (c Ciphertext) MarshalJSON() ([]byte, error) {
+func (c *Ciphertext) MarshalJSON() ([]byte, error) {
 	// Serialize the points to a format you prefer
 	return json.Marshal(map[string]interface{}{
 		"c": c.C.ToAffineCompressed(), // Assuming `ToAffineCompressed` returns a byte slice
@@ -52,11 +52,12 @@ func (c *Ciphertext) UnmarshalJSON(data []byte) error {
 
 	// Convert the byte arrays back into curve points
 	// Assuming `FromCompressed` is a method to parse compressed points
-	pointC, err := curves.ED25519().Point.FromAffineCompressed(temp.C)
+	ed25519Curve := curves.ED25519()
+	pointC, err := ed25519Curve.Point.FromAffineCompressed(temp.C)
 	if err != nil {
 		return err
 	}
-	pointD, err := curves.ED25519().Point.FromAffineCompressed(temp.D)
+	pointD, err := ed25519Curve.Point.FromAffineCompressed(temp.D)
 	if err != nil {
 		return err
 	}

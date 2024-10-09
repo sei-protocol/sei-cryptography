@@ -16,7 +16,8 @@ type TwistedElGamal struct {
 	maxMapping map[MaxBits]bool
 }
 
-func NewTwistedElgamalWithED25519Curve() *TwistedElGamal {
+// NewTwistedElgamal creates a new TwistedElGamal instance with ED25519 curve.
+func NewTwistedElgamal() *TwistedElGamal {
 	var s ristretto.Point
 	s.SetZero()
 	mapping := make(map[string]uint64)
@@ -30,30 +31,16 @@ func NewTwistedElgamalWithED25519Curve() *TwistedElGamal {
 	}
 }
 
-func NewTwistedElgamal(curve *curves.Curve) *TwistedElGamal {
-	var s ristretto.Point
-	s.SetZero()
-	mapping := make(map[string]uint64)
-	maxMapping := make(map[MaxBits]bool)
-	mapping[s.String()] = 0
-
-	return &TwistedElGamal{
-		curve:      curve,
-		maxMapping: maxMapping,
-		mapping:    mapping,
-	}
-}
-
 // Encrypt encrypts a message using the public key pk.
 func (teg TwistedElGamal) Encrypt(pk curves.Point, message uint64) (*Ciphertext, curves.Scalar, error) {
 	// Generate a random scalar r
 	randomFactor := teg.curve.Scalar.Random(crand.Reader)
 
-	return teg.EncryptWithRand(pk, message, randomFactor)
+	return teg.encryptWithRand(pk, message, randomFactor)
 }
 
 // EncryptWithRand encrypts a message using the public key pk and a given random factor.
-func (teg TwistedElGamal) EncryptWithRand(pk curves.Point, message uint64, randomFactor curves.Scalar) (*Ciphertext, curves.Scalar, error) {
+func (teg TwistedElGamal) encryptWithRand(pk curves.Point, message uint64, randomFactor curves.Scalar) (*Ciphertext, curves.Scalar, error) {
 	if pk == nil {
 		return nil, nil, fmt.Errorf("invalid public key")
 	}
