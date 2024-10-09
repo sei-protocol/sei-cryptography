@@ -16,6 +16,20 @@ type TwistedElGamal struct {
 	maxMapping map[MaxBits]bool
 }
 
+func NewTwistedElgamalWithED25519Curve() *TwistedElGamal {
+	var s ristretto.Point
+	s.SetZero()
+	mapping := make(map[string]uint64)
+	maxMapping := make(map[MaxBits]bool)
+	mapping[s.String()] = 0
+
+	return &TwistedElGamal{
+		curve:      curves.ED25519(),
+		maxMapping: maxMapping,
+		mapping:    mapping,
+	}
+}
+
 func NewTwistedElgamal(curve *curves.Curve) *TwistedElGamal {
 	var s ristretto.Point
 	s.SetZero()
