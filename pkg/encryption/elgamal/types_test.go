@@ -13,7 +13,7 @@ func TestCiphertext_MarshalJSON(t *testing.T) {
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	value := uint64(108)
-	ciphertext, _, err := eg.Encrypt(keys.PublicKey, value)
+	ciphertext, _, _ := eg.Encrypt(keys.PublicKey, value)
 
 	// Marshal the Ciphertext to JSON
 	data, err := json.Marshal(ciphertext)
