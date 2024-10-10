@@ -14,10 +14,12 @@ func NewEqualityProofTranscript() *EqualityProofTranscript {
 	return &EqualityProofTranscript{messages: make([][]byte, 0)}
 }
 
+// AppendMessage appends a message to the transcript
 func (t *EqualityProofTranscript) AppendMessage(label string, data []byte) {
 	t.messages = append(t.messages, append([]byte(label), data...))
 }
 
+// ChallengeScalar generates a challenge scalar from the transcript
 func (t *EqualityProofTranscript) ChallengeScalar() curves.Scalar {
 	hasher := sha512.New()
 	for _, msg := range t.messages {
