@@ -97,14 +97,14 @@ func NewCiphertextCiphertextEqualityProof(
 	}, nil
 }
 
-// Verify Function to verify the cipher-cipher proof
+// VerifyCiphertextCiphertextEquality Function to verify the cipher-cipher proof
 // Parameters:
 // - proof: The proof to be verified.
 // - sourcePubKey: The ElGamal public key associated with the first ElGamal ciphertext.
 // - destinationPubKey: The ElGamal public key associated with the second ElGamal ciphertext.
 // - sourceCiphertext: The first ElGamal ciphertext to be compared.
 // - destinationCiphertext: The second ElGamal ciphertext to be compared.
-func Verify(
+func VerifyCiphertextCiphertextEquality(
 	proof *CiphertextCiphertextEqualityProof,
 	sourcePubKey *curves.Point,
 	destinationPubKey *curves.Point,

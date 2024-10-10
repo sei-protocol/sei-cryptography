@@ -90,8 +90,8 @@ func TestCiphertextCiphertextEqualityProof(t *testing.T) {
 			)
 			assert.NoError(t, err, "Proof generation should not fail")
 
-			// Verify the proof
-			valid := Verify(
+			// VerifyCiphertextCiphertextEquality the proof
+			valid := VerifyCiphertextCiphertextEquality(
 				proof,
 				&sourceKeypair.PublicKey,
 				actualDestinationPubkey,
@@ -139,8 +139,8 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 		)
 		assert.NoError(t, err, "Proof generation should succeed for zero amounts")
 
-		// Verify the proof
-		valid := Verify(
+		// VerifyCiphertextCiphertextEquality the proof
+		valid := VerifyCiphertextCiphertextEquality(
 			proof,
 			&sourceKeypair.PublicKey,
 			&destinationKeypair.PublicKey,
@@ -182,8 +182,8 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 		)
 		assert.NoError(t, err, "Proof generation should succeed for maximum amounts")
 
-		// Verify the proof
-		valid := Verify(
+		// VerifyCiphertextCiphertextEquality the proof
+		valid := VerifyCiphertextCiphertextEquality(
 			proof,
 			&sourceKeypair.PublicKey,
 			&destinationKeypair.PublicKey,
