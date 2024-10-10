@@ -7,7 +7,7 @@ import (
 )
 
 func TestCiphertext_MarshalJSON(t *testing.T) {
-	privateKey, _ := generateKey()
+	privateKey, _ := GenerateKey()
 	eg := NewTwistedElgamal()
 
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
