@@ -3,6 +3,7 @@ package zkproofs
 import (
 	crand "crypto/rand"
 	"encoding/json"
+	"errors"
 	"github.com/coinbase/kryptology/pkg/bulletproof"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/gtank/merlin"
@@ -22,6 +23,9 @@ type RangeProof struct {
 // Note that while this proof generator takes in the plaintext of the value, it will only work in conjunction with a
 // ciphertext that encrypts value using the given randomness.
 func NewRangeProof(upperBound, value int, randomness curves.Scalar) (*RangeProof, error) {
+	if randomness == nil {
+		return nil, errors.New("invalid randomness factor")
+	}
 	curve := curves.ED25519()
 	prover, err := bulletproof.NewRangeProver(upperBound, getRangeDomain(), getIppDomain(), *curve)
 	if err != nil {
@@ -47,7 +51,16 @@ func NewRangeProof(upperBound, value int, randomness curves.Scalar) (*RangeProof
 }
 
 // VerifyRangeProof verifies the range proof for the given ciphertext
-func VerifyRangeProof(proof *RangeProof, ciphertext elgamal.Ciphertext) (bool, error) {
+func VerifyRangeProof(proof *RangeProof, ciphertext *elgamal.Ciphertext) (bool, error) {
+	// Validate input
+	if proof == nil || proof.Proof == nil || proof.Randomness == nil {
+		return false, errors.New("invalid proof")
+	}
+
+	if ciphertext == nil || ciphertext.C == nil || ciphertext.D == nil {
+		return false, errors.New("invalid ciphertext")
+	}
+
 	curve := curves.ED25519()
 	// Verifier gets the proof, the commitment, the generators to verify the value is within the range
 	verifier, err := bulletproof.NewRangeVerifier(proof.UpperBound, getRangeDomain(), getIppDomain(), *curve)

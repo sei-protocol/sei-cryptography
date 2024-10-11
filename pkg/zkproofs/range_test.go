@@ -154,7 +154,7 @@ func TestRangeProofs(t *testing.T) {
 	proof, err := NewRangeProof(n, value, gamma)
 	require.Nil(t, err)
 
-	verified, err := VerifyRangeProof(proof, *ciphertext)
+	verified, err := VerifyRangeProof(proof, ciphertext)
 	require.NoError(t, err)
 	require.True(t, verified)
 
@@ -162,7 +162,7 @@ func TestRangeProofs(t *testing.T) {
 	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, uint64(101))
 	require.Nil(t, err)
 
-	verified, err = VerifyRangeProof(proof, *ciphertext101)
+	verified, err = VerifyRangeProof(proof, ciphertext101)
 	require.Error(t, err)
 	require.False(t, verified)
 }
@@ -194,7 +194,72 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 	err = json.Unmarshal(marshaledProof, &unmarshaled)
 	require.NoError(t, err, "Unmarshaling should not produce an error")
 
-	verified, err := VerifyRangeProof(&unmarshaled, *ciphertext)
+	verified, err := VerifyRangeProof(&unmarshaled, ciphertext)
 	require.NoError(t, err)
 	require.True(t, verified)
+}
+
+func TestRangeProofs_InvalidInput(t *testing.T) {
+	privateKey, err := elgamal.GenerateKey()
+	require.Nil(t, err, "Error generating private key")
+
+	eg := elgamal.NewTwistedElgamal()
+	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	require.Nil(t, err, "Error generating key pair")
+
+	_, gamma, err := eg.Encrypt(keyPair.PublicKey, uint64(10))
+
+	t.Run("Invalid upper bound", func(t *testing.T) {
+		// Proof is nil
+		_, err := NewRangeProof(
+			0, 0, gamma,
+		)
+		require.EqualError(t, err, "range NewRangeProver: getGeneratorPoints splitPointVector: length of points must be at least one")
+	})
+
+	t.Run("Invalid randomness factor", func(t *testing.T) {
+		// Proof is nil
+		_, err := NewRangeProof(
+			1, 0, nil,
+		)
+		require.EqualError(t, err, "invalid randomness factor")
+	})
+}
+
+func TestVerifyRangeProof_InvalidInput(t *testing.T) {
+	privateKey, _ := elgamal.GenerateKey()
+	eg := elgamal.NewTwistedElgamal()
+	keyPair, _ := eg.KeyGen(*privateKey, TestDenom)
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(10))
+
+	proof, err := NewRangeProof(64, 10, gamma)
+	require.NoError(t, err)
+
+	t.Run("Nil proof", func(t *testing.T) {
+		// Proof is nil
+		valid, err := VerifyRangeProof(nil, ciphertext)
+		require.EqualError(t, err, "invalid proof")
+		require.False(t, valid)
+	})
+
+	t.Run("Proof with nil fields", func(t *testing.T) {
+		valid, err := VerifyRangeProof(&RangeProof{}, ciphertext)
+		require.EqualError(t, err, "invalid proof")
+		require.False(t, valid)
+	})
+
+	t.Run("nil ciphertext", func(t *testing.T) {
+		// Proof is nil
+		valid, err := VerifyRangeProof(proof, nil)
+		require.EqualError(t, err, "invalid ciphertext")
+		require.False(t, valid)
+	})
+
+	t.Run("Ciphertext with nil fields", func(t *testing.T) {
+		// Proof is nil
+		valid, err := VerifyRangeProof(proof, &elgamal.Ciphertext{})
+		require.EqualError(t, err, "invalid ciphertext")
+		require.False(t, valid)
+	})
+
 }
