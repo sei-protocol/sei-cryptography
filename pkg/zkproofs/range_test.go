@@ -2,6 +2,7 @@ package zkproofs
 
 import (
 	crand "crypto/rand"
+	"encoding/json"
 	"github.com/coinbase/kryptology/pkg/bulletproof"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/gtank/merlin"
@@ -164,4 +165,36 @@ func TestRangeProofs(t *testing.T) {
 	verified, err = VerifyRangeProof(proof, *ciphertext101)
 	require.Error(t, err)
 	require.False(t, verified)
+}
+
+// We test marshaling and unmarshaling of the range proof this way as bulletproof.RangeProof does not implement Equals
+// and particular fields are not exported.
+func TestRangeProofsWithMarshaling(t *testing.T) {
+	value := 100
+	n := 64 // the range is [0, 2^64]
+
+	privateKey, err := elgamal.GenerateKey()
+	require.Nil(t, err, "Error generating private key")
+
+	eg := elgamal.NewTwistedElgamal()
+	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	require.Nil(t, err, "Error generating key pair")
+
+	ciphertext, gamma, err := eg.Encrypt(keyPair.PublicKey, uint64(value))
+
+	proof, err := NewRangeProof(n, value, gamma)
+	require.Nil(t, err)
+
+	// Marshal the proof to JSON
+	marshaledProof, err := json.Marshal(proof)
+	require.NoError(t, err, "Marshaling should not produce an error")
+
+	// Unmarshal the JSON back to a RangeProof
+	var unmarshaled RangeProof
+	err = json.Unmarshal(marshaledProof, &unmarshaled)
+	require.NoError(t, err, "Unmarshaling should not produce an error")
+
+	verified, err := VerifyRangeProof(&unmarshaled, *ciphertext)
+	require.NoError(t, err)
+	require.True(t, verified)
 }
