@@ -157,3 +157,64 @@ func TestCiphertextCommitmentEqualityProof_MarshalUnmarshalJSON(t *testing.T) {
 	require.Equal(t, proof.Zx, unmarshaled.Zx, "Zx scalars should be equal")
 	require.Equal(t, proof.Zr, unmarshaled.Zr, "Zr scalars should be equal")
 }
+
+func TestNewCiphertextCommitmentEqualityProof_InvalidInput(t *testing.T) {
+	sourcePrivateKey, _ := elgamal.GenerateKey()
+	eg := elgamal.NewTwistedElgamal()
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+
+	amount := uint64(100)
+
+	// Encrypt the amount using source and destination public keys
+	sourceCiphertext, sourceRandomness, _ := eg.Encrypt(sourceKeypair.PublicKey, amount)
+	scalarAmtValue := new(big.Int).SetUint64(amount)
+	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+
+	t.Run("Invalid Source Keypair", func(t *testing.T) {
+		// Source keypair is nil
+		proof, err := NewCiphertextCommitmentEqualityProof(
+			nil,
+			sourceCiphertext,
+			&sourceRandomness,
+			&scalarAmount,
+		)
+		require.Error(t, err, "Proof generation should fail for nil source keypair")
+		require.Nil(t, proof, "Proof should be nil for nil source keypair")
+	})
+
+	t.Run("Invalid Source Ciphertext", func(t *testing.T) {
+		// Source ciphertext is nil
+		proof, err := NewCiphertextCommitmentEqualityProof(
+			sourceKeypair,
+			nil,
+			&sourceRandomness,
+			&scalarAmount,
+		)
+		require.Error(t, err, "Proof generation should fail for nil source ciphertext")
+		require.Nil(t, proof, "Proof should be nil for nil source ciphertext")
+	})
+
+	t.Run("Invalid Source Pedersen opening", func(t *testing.T) {
+		// Source Pedersen Opening is nil
+		proof, err := NewCiphertextCommitmentEqualityProof(
+			sourceKeypair,
+			sourceCiphertext,
+			nil,
+			&scalarAmount,
+		)
+		require.Error(t, err, "Proof generation should fail for nil Pedersen opening")
+		require.Nil(t, proof, "Proof should be nil")
+	})
+
+	t.Run("Invalid Amount", func(t *testing.T) {
+		// Amount is nil
+		proof, err := NewCiphertextCommitmentEqualityProof(
+			sourceKeypair,
+			sourceCiphertext,
+			&sourceRandomness,
+			nil,
+		)
+		require.Error(t, err, "Proof generation should fail for nil amount")
+		require.Nil(t, proof, "Proof should be nil")
+	})
+}

@@ -3,6 +3,7 @@ package zkproofs
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 )
@@ -25,6 +26,23 @@ func NewCiphertextCommitmentEqualityProof(
 	pedersenOpening *curves.Scalar,
 	amount *curves.Scalar,
 ) (*CiphertextCommitmentEqualityProof, error) {
+	// Validate input
+	if sourceKeypair == nil || sourceKeypair.PublicKey == nil || sourceKeypair.PrivateKey == nil {
+		return nil, errors.New("keypair is invalid")
+	}
+
+	if sourceCiphertext == nil || sourceCiphertext.D == nil || sourceCiphertext.C == nil {
+		return nil, errors.New("sourceCiphertext is invalid")
+	}
+
+	if pedersenOpening == nil {
+		return nil, errors.New("pedersenOpening is invalid")
+	}
+
+	if amount == nil {
+		return nil, errors.New("amount is invalid")
+	}
+
 	// Extract necessary values
 	P := sourceKeypair.PublicKey // Public key in twisted ElGamal aesgcm scheme
 	D := sourceCiphertext.D      // D part of the twisted ElGamal ciphertext
@@ -90,6 +108,17 @@ func VerifyCiphertextCommitmentEquality(
 	sourceCiphertext *elgamal.Ciphertext,
 	pedersenCommitment *curves.Point,
 ) bool {
+	// Validate proof
+	if proof == nil || proof.Y0 == nil || proof.Y1 == nil || proof.Y2 == nil || proof.Zs == nil || proof.Zx == nil ||
+		proof.Zr == nil {
+		return false
+	}
+
+	// Validate input
+	if sourcePubKey == nil || sourceCiphertext == nil || pedersenCommitment == nil {
+		return false
+	}
+
 	// Extract necessary values
 	P := *sourcePubKey
 	D := sourceCiphertext.D
