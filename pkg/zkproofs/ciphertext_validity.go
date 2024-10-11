@@ -3,6 +3,7 @@ package zkproofs
 import (
 	crand "crypto/rand"
 	"encoding/json"
+	"errors"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 	"math/big"
@@ -18,10 +19,22 @@ type CiphertextValidityProof struct {
 }
 
 // NewCiphertextValidityProof generates a zero-knowledge proof that a ciphertext is properly encrypted.
-func NewCiphertextValidityProof(message uint64, r *curves.Scalar, pubKey curves.Point, ct *elgamal.Ciphertext) *CiphertextValidityProof {
+func NewCiphertextValidityProof(r *curves.Scalar, pubKey curves.Point, ct *elgamal.Ciphertext, message uint64) (*CiphertextValidityProof, error) {
+	// Validate input
+	if r == nil {
+		return nil, errors.New("invalid randomness factor")
+	}
+
+	if pubKey == nil {
+		return nil, errors.New("invalid public key")
+	}
+
+	if ct == nil || ct.C == nil || ct.D == nil {
+		return nil, errors.New("invalid ciphertext")
+	}
+
 	eg := elgamal.NewTwistedElgamal()
 
-	var proof CiphertextValidityProof
 	H := eg.GetH()
 	G := eg.GetG()
 
@@ -42,7 +55,8 @@ func NewCiphertextValidityProof(message uint64, r *curves.Scalar, pubKey curves.
 	Commitment2 := pubKey.Mul(rBlind) // Commitment2 = rBlind * P
 
 	// Step 3: Generate a challenge using the Fiat-Shamir heuristic.
-	// The challenge is basically just a hash of all the provided values. This locks in the values and makes sure that the proof cannot be for some other set of values.
+	// The challenge is basically just a hash of all the provided values. This locks in the values and makes sure that
+	// the proof cannot be for some other set of values.
 	hashData := append(Commitment1.ToAffineCompressed(), Commitment2.ToAffineCompressed()...)
 	hashData = append(hashData, ct.C.ToAffineCompressed()...)
 	hashData = append(hashData, ct.D.ToAffineCompressed()...)
@@ -52,14 +66,13 @@ func NewCiphertextValidityProof(message uint64, r *curves.Scalar, pubKey curves.
 	Response1 := challenge.MulAdd(*r, rBlind) // Response1 = rBlind + challenge * r
 	Response2 := challenge.MulAdd(x, xBlind)  // Response2 = xBlind + challenge * x
 
-	// Store the proof
-	proof.Commitment1 = Commitment1
-	proof.Commitment2 = Commitment2
-	proof.Challenge = challenge
-	proof.Response1 = Response1
-	proof.Response2 = Response2
-
-	return &proof
+	return &CiphertextValidityProof{
+		Commitment1: Commitment1,
+		Commitment2: Commitment2,
+		Challenge:   challenge,
+		Response1:   Response1,
+		Response2:   Response2,
+	}, nil
 }
 
 // VerifyCiphertextValidityProof verifies the zero-knowledge proof that a ciphertext is valid.
