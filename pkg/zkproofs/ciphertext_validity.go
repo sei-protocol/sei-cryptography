@@ -77,6 +77,11 @@ func NewCiphertextValidityProof(r *curves.Scalar, pubKey curves.Point, ct *elgam
 
 // VerifyCiphertextValidityProof verifies the zero-knowledge proof that a ciphertext is valid.
 func VerifyCiphertextValidityProof(proof *CiphertextValidityProof, pubKey curves.Point, ct *elgamal.Ciphertext) bool {
+	// Validate input
+	if proof == nil || proof.Commitment1 == nil || proof.Commitment2 == nil || proof.Challenge == nil ||
+		proof.Response1 == nil || proof.Response2 == nil || pubKey == nil || ct == nil || ct.C == nil || ct.D == nil {
+		return false
+	}
 
 	eg := elgamal.NewTwistedElgamal()
 	H := eg.GetH()

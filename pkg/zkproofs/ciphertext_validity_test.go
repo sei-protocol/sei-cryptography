@@ -132,3 +132,38 @@ func TestNewCiphertextValidityProof_InvalidInput(t *testing.T) {
 		require.Error(t, err, "Proof generation should fail for nil source ciphertext")
 	})
 }
+
+func TestVerifyCiphertextValidityProof_Invalid_Input(t *testing.T) {
+	privateKey, _ := elgamal.GenerateKey()
+	eg := elgamal.NewTwistedElgamal()
+	keys, _ := eg.KeyGen(*privateKey, TestDenom)
+
+	amount := uint64(100)
+	// Encrypt the amount using source and destination public keys
+	ciphertext, randomness, _ := eg.Encrypt(keys.PublicKey, amount)
+
+	proof, _ := NewCiphertextValidityProof(&randomness, keys.PublicKey, ciphertext, amount)
+
+	t.Run("Invalid (nil) proof", func(t *testing.T) {
+		// Proof commitment1 is nil
+		validated := VerifyCiphertextValidityProof(nil, keys.PublicKey, ciphertext)
+		require.False(t, validated, "Validation should fail for nil commitment1")
+	})
+
+	t.Run("Invalid proof with nil fields", func(t *testing.T) {
+		validated := VerifyCiphertextValidityProof(&CiphertextValidityProof{}, keys.PublicKey, ciphertext)
+		require.False(t, validated, "Validation should fail for proof with nil fields")
+	})
+
+	t.Run("Invalid Public Key", func(t *testing.T) {
+		// Proof challenge is nil
+		validated := VerifyCiphertextValidityProof(proof, nil, ciphertext)
+		require.False(t, validated, "Validation should fail for nil challenge")
+	})
+
+	t.Run("Invalid Ciphertext", func(t *testing.T) {
+		// Proof response1 is nil
+		validated := VerifyCiphertextValidityProof(proof, keys.PublicKey, nil)
+		require.False(t, validated, "Validation should fail for nil response1")
+	})
+}
