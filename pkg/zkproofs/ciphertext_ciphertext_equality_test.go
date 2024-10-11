@@ -323,3 +323,100 @@ func TestNewCiphertextCiphertextEqualityProof_InvalidInputs(t *testing.T) {
 	})
 
 }
+
+// Invalid input tests for VerifyCiphertextCiphertextEquality
+func TestVerifyCiphertextCiphertextEquality_InvalidInputs(t *testing.T) {
+	sourcePrivateKey, _ := elgamal.GenerateKey()
+	destPrivateKey, _ := elgamal.GenerateKey()
+	eg := elgamal.NewTwistedElgamal()
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
+
+	amount := uint64(100)
+
+	// Encrypt the amount using source and destination public keys
+	sourceCiphertext, _, _ := eg.Encrypt(sourceKeypair.PublicKey, amount)
+	_, destinationRandomness, _ := eg.Encrypt(destinationKeypair.PublicKey, amount)
+	scalarAmtValue := new(big.Int).SetUint64(amount)
+	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+
+	proof, _ := NewCiphertextCiphertextEqualityProof(
+		sourceKeypair,
+		&destinationKeypair.PublicKey,
+		sourceCiphertext,
+		&destinationRandomness,
+		&scalarAmount,
+	)
+
+	t.Run("Invalid Proof", func(t *testing.T) {
+		// Proof is nil
+		valid := VerifyCiphertextCiphertextEquality(
+			nil,
+			&sourceKeypair.PublicKey,
+			&destinationKeypair.PublicKey,
+			sourceCiphertext,
+			sourceCiphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for nil proof")
+	})
+
+	t.Run("Invalid Proof with nil fields", func(t *testing.T) {
+		// Proof is nil
+		valid := VerifyCiphertextCiphertextEquality(
+			&CiphertextCiphertextEqualityProof{},
+			&sourceKeypair.PublicKey,
+			&destinationKeypair.PublicKey,
+			sourceCiphertext,
+			sourceCiphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for nil proof")
+	})
+
+	t.Run("Invalid Source Public Key", func(t *testing.T) {
+		// Source public key is nil
+		valid := VerifyCiphertextCiphertextEquality(
+			proof,
+			nil,
+			&destinationKeypair.PublicKey,
+			sourceCiphertext,
+			sourceCiphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for nil source public key")
+	})
+
+	t.Run("Invalid Destination Public Key", func(t *testing.T) {
+		// Destination public key is nil
+		valid := VerifyCiphertextCiphertextEquality(
+			proof,
+			&sourceKeypair.PublicKey,
+			nil,
+			sourceCiphertext,
+			sourceCiphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for nil destination public key")
+	})
+
+	t.Run("Invalid Source Ciphertext", func(t *testing.T) {
+		// Source ciphertext is nil
+		valid := VerifyCiphertextCiphertextEquality(
+			proof,
+			&sourceKeypair.PublicKey,
+			&destinationKeypair.PublicKey,
+			nil,
+			sourceCiphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for nil source ciphertext")
+	})
+
+	t.Run("Invalid Destination Ciphertext", func(t *testing.T) {
+		// Destination ciphertext is nil
+		valid := VerifyCiphertextCiphertextEquality(
+			proof,
+			&sourceKeypair.PublicKey,
+			&destinationKeypair.PublicKey,
+			sourceCiphertext,
+			nil,
+		)
+		require.False(t, valid, "Proof verification should fail for nil destination ciphertext")
+	})
+}

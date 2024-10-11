@@ -218,3 +218,79 @@ func TestNewCiphertextCommitmentEqualityProof_InvalidInput(t *testing.T) {
 		require.Nil(t, proof, "Proof should be nil")
 	})
 }
+
+func TestVerifyCiphertextCommitmentEquality_InvalidInput(t *testing.T) {
+	sourcePrivateKey, _ := elgamal.GenerateKey()
+	eg := elgamal.NewTwistedElgamal()
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+
+	amount := uint64(100)
+
+	// Encrypt the amount using source and destination public keys
+	sourceCiphertext, sourceRandomness, _ := eg.Encrypt(sourceKeypair.PublicKey, amount)
+	scalarAmtValue := new(big.Int).SetUint64(amount)
+	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+
+	// Generate the proof
+	proof, _ := NewCiphertextCommitmentEqualityProof(
+		sourceKeypair,
+		sourceCiphertext,
+		&sourceRandomness,
+		&scalarAmount,
+	)
+
+	t.Run("Invalid Proof", func(t *testing.T) {
+		// Proof is nil
+		valid := VerifyCiphertextCommitmentEquality(
+			nil,
+			&sourceKeypair.PublicKey,
+			sourceCiphertext,
+			&sourceCiphertext.C,
+		)
+		require.False(t, valid, "Proof verification should fail for nil proof")
+	})
+
+	t.Run("Invalid Proof With nil fields", func(t *testing.T) {
+		// Proof is nil
+		valid := VerifyCiphertextCommitmentEquality(
+			&CiphertextCommitmentEqualityProof{},
+			&sourceKeypair.PublicKey,
+			sourceCiphertext,
+			&sourceCiphertext.C,
+		)
+		require.False(t, valid, "Proof verification should fail for proof with nil fields")
+	})
+
+	t.Run("Invalid Source Public Key", func(t *testing.T) {
+		// Source public key is nil
+		valid := VerifyCiphertextCommitmentEquality(
+			proof,
+			nil,
+			sourceCiphertext,
+			&sourceCiphertext.C,
+		)
+		require.False(t, valid, "Proof verification should fail for nil source public key")
+	})
+
+	t.Run("Invalid Source Ciphertext", func(t *testing.T) {
+		// Source ciphertext is nil
+		valid := VerifyCiphertextCommitmentEquality(
+			proof,
+			&sourceKeypair.PublicKey,
+			nil,
+			&sourceCiphertext.C,
+		)
+		require.False(t, valid, "Proof verification should fail for nil source ciphertext")
+	})
+
+	t.Run("Invalid Pedersen Commitment", func(t *testing.T) {
+		// Pedersen commitment is nil
+		valid := VerifyCiphertextCommitmentEquality(
+			proof,
+			&sourceKeypair.PublicKey,
+			sourceCiphertext,
+			nil,
+		)
+		require.False(t, valid, "Proof verification should fail for nil Pedersen commitment")
+	})
+}
