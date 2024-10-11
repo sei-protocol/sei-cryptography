@@ -3,6 +3,7 @@ package zkproofs
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 )
@@ -19,6 +20,13 @@ func NewZeroBalanceProof(
 	keypair *elgamal.KeyPair,
 	ciphertext *elgamal.Ciphertext,
 ) (*ZeroBalanceProof, error) {
+	if keypair == nil || keypair.PublicKey == nil || keypair.PrivateKey == nil {
+		return nil, errors.New("keypair is invalid")
+	}
+
+	if ciphertext == nil || ciphertext.D == nil || ciphertext.C == nil {
+		return nil, errors.New("ciphertext is invalid")
+	}
 
 	// Extract necessary values
 	P := keypair.PublicKey
@@ -56,6 +64,11 @@ func VerifyZeroProof(
 	pubKey *curves.Point,
 	ciphertext *elgamal.Ciphertext,
 ) bool {
+	if proof == nil || proof.Yp == nil || proof.Yd == nil || proof.Z == nil || pubKey == nil ||
+		ciphertext == nil || ciphertext.C == nil || ciphertext.D == nil {
+		return false
+	}
+
 	// Extract necessary values
 	P := *pubKey
 	C := ciphertext.C
