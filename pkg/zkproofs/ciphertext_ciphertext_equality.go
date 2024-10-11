@@ -3,6 +3,7 @@ package zkproofs
 import (
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 )
@@ -24,21 +25,42 @@ type CiphertextCiphertextEqualityProof struct {
 //
 // Parameters:
 // - sourceKeypair: The ElGamal keypair associated with the first ciphertext to be proved.
-// - destinationPubkey: The ElGamal pubkey associated with the second ElGamal ciphertext.
+// - destinationPubKey: The ElGamal public key associated with the second ElGamal ciphertext.
 // - sourceCiphertext: The first ElGamal ciphertext for which the prover knows a decryption key.
 // - destinationOpening: The opening (randomness) associated with the second ElGamal ciphertext.
 // - amount: The message associated with the ElGamal ciphertext and Pedersen commitment.
 func NewCiphertextCiphertextEqualityProof(
 	sourceKeypair *elgamal.KeyPair,
-	destinationPubkey *curves.Point,
+	destinationPubKey *curves.Point,
 	sourceCiphertext *elgamal.Ciphertext,
 	destinationOpening *curves.Scalar,
 	amount *curves.Scalar,
 ) (*CiphertextCiphertextEqualityProof, error) {
+	// validate input
+	if sourceKeypair == nil || sourceKeypair.PublicKey == nil || sourceKeypair.PrivateKey == nil {
+		return nil, errors.New("keypair is invalid")
+	}
+
+	if destinationPubKey == nil {
+		return nil, errors.New("destinationPubKey is invalid")
+	}
+
+	if sourceCiphertext == nil || sourceCiphertext.C == nil || sourceCiphertext.D == nil {
+		return nil, errors.New("sourceCiphertext is invalid")
+	}
+
+	if destinationOpening == nil {
+		return nil, errors.New("destinationOpening is invalid")
+	}
+
+	if amount == nil {
+		return nil, errors.New("amount is invalid")
+	}
+
 	// Extract necessary values
 	pSource := sourceKeypair.PublicKey
 	dSource := sourceCiphertext.D
-	pDestination := *destinationPubkey
+	pDestination := *destinationPubKey
 
 	s := sourceKeypair.PrivateKey
 	x := *amount
@@ -111,6 +133,19 @@ func VerifyCiphertextCiphertextEquality(
 	sourceCiphertext *elgamal.Ciphertext,
 	destinationCiphertext *elgamal.Ciphertext,
 ) bool {
+	// validate proof for nil values
+	if proof == nil || proof.Y0 == nil || proof.Y1 == nil || proof.Y2 == nil || proof.Y3 == nil || proof.Zs == nil ||
+		proof.Zx == nil || proof.Zr == nil {
+		return false
+	}
+
+	// validate other input
+	if sourcePubKey == nil || destinationPubKey == nil ||
+		sourceCiphertext == nil || sourceCiphertext.C == nil || sourceCiphertext.D == nil ||
+		destinationCiphertext == nil || destinationCiphertext.C == nil || destinationCiphertext.D == nil {
+		return false
+	}
+
 	// Extract necessary values
 	pSource := *sourcePubKey
 	cSource := sourceCiphertext.C

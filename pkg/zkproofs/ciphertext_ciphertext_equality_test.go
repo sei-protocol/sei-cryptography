@@ -240,3 +240,86 @@ func TestCiphertextCiphertextEqualityProof_UnmarshalJSON_Valid(t *testing.T) {
 	require.Equal(t, proof.Zx, unmarshaled.Zx, "Zx scalars should be equal after unmarshaling")
 	require.Equal(t, proof.Zr, unmarshaled.Zr, "Zr scalars should be equal after unmarshaling")
 }
+
+// Invalid input tests for NewCiphertextCiphertextEqualityProof
+func TestNewCiphertextCiphertextEqualityProof_InvalidInputs(t *testing.T) {
+	sourcePrivateKey, _ := elgamal.GenerateKey()
+	destPrivateKey, _ := elgamal.GenerateKey()
+	eg := elgamal.NewTwistedElgamal()
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
+
+	amount := uint64(100)
+
+	// Encrypt the amount using source and destination public keys
+	sourceCiphertext, _, _ := eg.Encrypt(sourceKeypair.PublicKey, amount)
+	_, destinationRandomness, _ := eg.Encrypt(destinationKeypair.PublicKey, amount)
+	scalarAmtValue := new(big.Int).SetUint64(amount)
+	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+
+	t.Run("Invalid Source Keypair", func(t *testing.T) {
+		// Source keypair is nil
+		proof, err := NewCiphertextCiphertextEqualityProof(
+			nil,
+			&destinationKeypair.PublicKey,
+			sourceCiphertext,
+			&destinationRandomness,
+			&scalarAmount,
+		)
+		require.Error(t, err, "Proof generation should fail for nil source keypair")
+		require.Nil(t, proof, "Proof should be nil for nil source keypair")
+	})
+
+	t.Run("Invalid Destination Public Key", func(t *testing.T) {
+		// Destination public key is nil
+		proof, err := NewCiphertextCiphertextEqualityProof(
+			sourceKeypair,
+			nil,
+			sourceCiphertext,
+			&destinationRandomness,
+			&scalarAmount,
+		)
+		require.Error(t, err, "Proof generation should fail for nil destination public key")
+		require.Nil(t, proof, "Proof should be nil for nil destination public key")
+	})
+
+	t.Run("Invalid Source Ciphertext", func(t *testing.T) {
+		// Source ciphertext is nil
+		proof, err := NewCiphertextCiphertextEqualityProof(
+			sourceKeypair,
+			&destinationKeypair.PublicKey,
+			nil,
+			&destinationRandomness,
+			&scalarAmount,
+		)
+		require.Error(t, err, "Proof generation should fail for nil source ciphertext")
+		require.Nil(t, proof, "Proof should be nil")
+	})
+
+	t.Run("Invalid Destination Randomness", func(t *testing.T) {
+		// Destination randomness is nil
+		proof, err := NewCiphertextCiphertextEqualityProof(
+			sourceKeypair,
+			&destinationKeypair.PublicKey,
+			sourceCiphertext,
+			nil,
+			&scalarAmount,
+		)
+		require.Error(t, err, "Proof generation should fail for nil destination randomness")
+		require.Nil(t, proof, "Proof should be nil")
+	})
+
+	t.Run("Invalid Amount", func(t *testing.T) {
+		// Amount is nil
+		proof, err := NewCiphertextCiphertextEqualityProof(
+			sourceKeypair,
+			&destinationKeypair.PublicKey,
+			sourceCiphertext,
+			&destinationRandomness,
+			nil,
+		)
+		require.Error(t, err, "Proof generation should fail for nil amount")
+		require.Nil(t, proof, "Proof should be nil")
+	})
+
+}
