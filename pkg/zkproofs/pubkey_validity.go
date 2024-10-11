@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 )
@@ -21,7 +22,16 @@ type PubKeyValidityProof struct {
 
 // NewPubKeyValidityProof generates the sigma protocol proof
 // The proof here is that the creator of this PubKey also knows the corresponding PrivateKey
-func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) *PubKeyValidityProof {
+func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) (*PubKeyValidityProof, error) {
+	// Validate input
+	if pubKey == nil {
+		return nil, errors.New("invalid public key")
+	}
+
+	if privKey == nil {
+		return nil, errors.New("invalid private key")
+	}
+
 	eg := elgamal.NewTwistedElgamal()
 	H := eg.GetH()
 	// Prover generates a random scalar y
@@ -42,11 +52,16 @@ func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) *PubKeyV
 	return &PubKeyValidityProof{
 		Y: Y,
 		Z: z,
-	}
+	}, nil
 }
 
 // VerifyPubKeyValidityProof verifies the validity of the proof
 func VerifyPubKeyValidityProof(pubKey curves.Point, proof PubKeyValidityProof) bool {
+	// Validate input
+	if pubKey == nil || proof.Y == nil || proof.Z == nil {
+		return false
+	}
+
 	eg := elgamal.NewTwistedElgamal()
 	H := eg.GetH()
 	// Recompute the challenge c
