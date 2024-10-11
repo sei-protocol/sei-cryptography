@@ -22,15 +22,15 @@ func TestPubKeyValidityProof(t *testing.T) {
 	proof := NewPubKeyValidityProof(keys.PublicKey, keys.PrivateKey)
 
 	// Verify the proof
-	valid := ValidatePubKeyValidityProof(keys.PublicKey, *proof)
+	valid := VerifyPubKeyValidityProof(keys.PublicKey, *proof)
 	require.True(t, valid, "Valid Proof should be validated as true")
 
-	invalid := ValidatePubKeyValidityProof(altKeys.PublicKey, *proof)
+	invalid := VerifyPubKeyValidityProof(altKeys.PublicKey, *proof)
 	require.False(t, invalid, "Proof should be invalid when trying to validate wrong PublicKey")
 
 	// Generate proof with the wrong private key.
 	badProof := NewPubKeyValidityProof(keys.PublicKey, altKeys.PrivateKey)
-	invalid = ValidatePubKeyValidityProof(keys.PublicKey, *badProof)
+	invalid = VerifyPubKeyValidityProof(keys.PublicKey, *badProof)
 	require.False(t, invalid, "Proof generated with wrong Privkey should be validated as false.")
 }
 

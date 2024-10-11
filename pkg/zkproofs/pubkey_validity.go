@@ -45,8 +45,8 @@ func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) *PubKeyV
 	}
 }
 
-// ValidatePubKeyValidityProof verifies the validity of the proof
-func ValidatePubKeyValidityProof(pubKey curves.Point, proof PubKeyValidityProof) bool {
+// VerifyPubKeyValidityProof verifies the validity of the proof
+func VerifyPubKeyValidityProof(pubKey curves.Point, proof PubKeyValidityProof) bool {
 	eg := elgamal.NewTwistedElgamal()
 	H := eg.GetH()
 	// Recompute the challenge c
