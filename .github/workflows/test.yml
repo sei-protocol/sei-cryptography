@@ -58,15 +58,10 @@ jobs:
             ~/.cache/go-build
           key: ${{ needs.setup.outputs.cache-key }}
 
-      - name: Determine packages to test (excluding elgamal)
-        id: packages
+      - name: Run general unit tests (excluding elgamal)
         run: |
-          PACKAGES=$(go list ./... | grep -v '/pkg/encryption/elgamal$')
-          echo "PACKAGES=$PACKAGES" >> $GITHUB_ENV
-
-      - name: Run general unit tests
-        run: |
-          go test -mod=readonly -race -v -timeout 5m ${PACKAGES}
+          echo "Determining packages to test (excluding elgamal)..."
+          go list ./... | grep -v '/pkg/encryption/elgamal$' | xargs go test -mod=readonly -race -v -timeout 5m
 
   # Define a matrix for ElGamal package test subsets
   elgamal-tests:
