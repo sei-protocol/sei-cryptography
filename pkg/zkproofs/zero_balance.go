@@ -99,10 +99,7 @@ func VerifyZeroProof(
 	cC := C.Mul(c)            // c * C
 	rhsYd := cC.Add(proof.Yd) // c * C + Yd
 
-	if !lhsYd.Equal(rhsYd) {
-		return false
-	}
-	return true
+	return lhsYd.Equal(rhsYd)
 }
 
 // MarshalJSON for ZeroBalanceProof

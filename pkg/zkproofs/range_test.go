@@ -25,7 +25,7 @@ func TestValueIsInRange(t *testing.T) {
 	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.Nil(t, err, "Error generating key pair")
 
-	ciphertext, gamma, err := eg.Encrypt(keyPair.PublicKey, uint64(value))
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(value))
 
 	prover, err := bulletproof.NewRangeProver(n, []byte("rangeDomain"), []byte("ippDomain"), *curve)
 	require.NoError(t, err)
@@ -64,7 +64,7 @@ func TestRangeAttacksAreInfeasible(t *testing.T) {
 	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.Nil(t, err, "Error generating key pair")
 
-	ciphertext, gamma, err := eg.Encrypt(keyPair.PublicKey, uint64(value))
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(value))
 
 	prover, err := bulletproof.NewRangeProver(n, []byte("rangeDomain"), []byte("ippDomain"), *curve)
 	require.NoError(t, err)
@@ -149,7 +149,7 @@ func TestRangeProofs(t *testing.T) {
 	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.Nil(t, err, "Error generating key pair")
 
-	ciphertext, gamma, err := eg.Encrypt(keyPair.PublicKey, uint64(value))
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(value))
 
 	proof, err := NewRangeProof(n, value, gamma)
 	require.Nil(t, err)
@@ -180,7 +180,7 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.Nil(t, err, "Error generating key pair")
 
-	ciphertext, gamma, err := eg.Encrypt(keyPair.PublicKey, uint64(value))
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(value))
 
 	proof, err := NewRangeProof(n, value, gamma)
 	require.Nil(t, err)
@@ -207,7 +207,7 @@ func TestRangeProofs_InvalidInput(t *testing.T) {
 	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.Nil(t, err, "Error generating key pair")
 
-	_, gamma, err := eg.Encrypt(keyPair.PublicKey, uint64(10))
+	_, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(10))
 
 	t.Run("Invalid upper bound", func(t *testing.T) {
 		// Proof is nil

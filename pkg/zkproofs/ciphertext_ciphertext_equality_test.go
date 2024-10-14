@@ -53,11 +53,11 @@ func TestCiphertextCiphertextEqualityProof(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Key generation
-			sourcePrivateKey, err := elgamal.GenerateKey()
-			destPrivateKey, err := elgamal.GenerateKey()
+			sourcePrivateKey, _ := elgamal.GenerateKey()
+			destPrivateKey, _ := elgamal.GenerateKey()
 			eg := elgamal.NewTwistedElgamal()
-			sourceKeypair, err := eg.KeyGen(*sourcePrivateKey, TestDenom)
-			destinationKeypair, err := eg.KeyGen(*destPrivateKey, TestDenom)
+			sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+			destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
 
 			var actualDestinationPubkey *curves.Point
 			if tt.useDifferentPublicKey {
@@ -111,11 +111,11 @@ func TestCiphertextCiphertextEqualityProof(t *testing.T) {
 func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 	t.Run("Zero Amounts", func(t *testing.T) {
 		// Key generation
-		sourcePrivateKey, err := elgamal.GenerateKey()
-		destPrivateKey, err := elgamal.GenerateKey()
+		sourcePrivateKey, _ := elgamal.GenerateKey()
+		destPrivateKey, _ := elgamal.GenerateKey()
 		eg := elgamal.NewTwistedElgamal()
-		sourceKeypair, err := eg.KeyGen(*sourcePrivateKey, TestDenom)
-		destinationKeypair, err := eg.KeyGen(*destPrivateKey, TestDenom)
+		sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+		destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
 
 		amount := uint64(0)
 
@@ -152,12 +152,12 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 
 	t.Run("Maximum Amount", func(t *testing.T) {
 		// Key generation
-		sourcePrivateKey, err := elgamal.GenerateKey()
-		destPrivateKey, err := elgamal.GenerateKey()
+		sourcePrivateKey, _ := elgamal.GenerateKey()
+		destPrivateKey, _ := elgamal.GenerateKey()
 		eg := elgamal.NewTwistedElgamal()
-		sourceKeypair, err := eg.KeyGen(*sourcePrivateKey, TestDenom)
+		sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
-		destinationKeypair, err := eg.KeyGen(*destPrivateKey, TestDenom)
+		destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
 
 		amount := uint64(1 << 60) // A large amount to test scalability
 
@@ -195,17 +195,17 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 }
 
 func TestCiphertextCiphertextEqualityProof_UnmarshalJSON_Valid(t *testing.T) {
-	sourcePrivateKey, err := elgamal.GenerateKey()
-	destPrivateKey, err := elgamal.GenerateKey()
+	sourcePrivateKey, _ := elgamal.GenerateKey()
+	destPrivateKey, _ := elgamal.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	sourceKeypair, err := eg.KeyGen(*sourcePrivateKey, TestDenom)
-	destinationKeypair, err := eg.KeyGen(*destPrivateKey, TestDenom)
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
 
 	amount := uint64(100)
 
 	// Encrypt the amount using source and destination public keys
-	sourceCiphertext, _, err := eg.Encrypt(sourceKeypair.PublicKey, amount)
-	_, destinationRandomness, err := eg.Encrypt(destinationKeypair.PublicKey, amount)
+	sourceCiphertext, _, _ := eg.Encrypt(sourceKeypair.PublicKey, amount)
+	_, destinationRandomness, _ := eg.Encrypt(destinationKeypair.PublicKey, amount)
 	scalarAmtValue := new(big.Int).SetUint64(amount)
 	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
 

@@ -52,9 +52,9 @@ func TestCiphertextCommitmentEqualityProof(t *testing.T) {
 		tt := tt // Capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			// Key generation
-			sourcePrivateKey, err := elgamal.GenerateKey()
+			sourcePrivateKey, _ := elgamal.GenerateKey()
 			eg := elgamal.NewTwistedElgamal()
-			sourceKeypair, err := eg.KeyGen(*sourcePrivateKey, TestDenom)
+			sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
 			// Encrypt the source amount
 			sourceCiphertext, sourceRandomness, err := eg.Encrypt(sourceKeypair.PublicKey, tt.sourceAmount)
@@ -139,6 +139,8 @@ func TestCiphertextCommitmentEqualityProof_MarshalUnmarshalJSON(t *testing.T) {
 		&sourceRandomness,
 		&scalarAmount,
 	)
+
+	require.NoError(t, err, "Proof generation should not fail")
 
 	// Marshal the proof to JSON
 	data, err := json.Marshal(proof)

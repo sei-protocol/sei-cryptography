@@ -210,11 +210,7 @@ func VerifyCiphertextCiphertextEquality(
 
 	rhsY3 := proof.Y3.Add(cDd)
 
-	if !lhsY3.Equal(rhsY3) {
-		return false
-	}
-
-	return true
+	return lhsY3.Equal(rhsY3)
 }
 
 // MarshalJSON for CiphertextCiphertextEqualityProof

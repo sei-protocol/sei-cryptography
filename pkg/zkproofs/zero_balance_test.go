@@ -39,12 +39,12 @@ func TestZeroBalanceProof(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup keypair
-			privateKey, err := elgamal.GenerateKey()
-			altPrivateKey, err := elgamal.GenerateKey()
+			privateKey, _ := elgamal.GenerateKey()
+			altPrivateKey, _ := elgamal.GenerateKey()
 
 			eg := elgamal.NewTwistedElgamal()
-			keypair, err := eg.KeyGen(*privateKey, TestDenom)
-			alternativeKeypair, err := eg.KeyGen(*altPrivateKey, TestDenom)
+			keypair, _ := eg.KeyGen(*privateKey, TestDenom)
+			alternativeKeypair, _ := eg.KeyGen(*altPrivateKey, TestDenom)
 
 			actualPublicKey := keypair.PublicKey
 			if tt.useDifferentPubKey {
@@ -79,6 +79,7 @@ func TestZeroBalanceProof_MarshalUnmarshalJSON(t *testing.T) {
 
 	ciphertext, _, _ := eg.Encrypt(keypair.PublicKey, 0)
 	original, err := NewZeroBalanceProof(keypair, ciphertext)
+	require.NoError(t, err, "Proof generation should not produce an error")
 
 	// Marshal the proof to JSON
 	data, err := json.Marshal(original)
@@ -246,6 +247,7 @@ func TestVerifyZeroProof_InvalidInput(t *testing.T) {
 
 	nilFieldsProof := &ZeroBalanceProof{}
 	valid = VerifyZeroProof(nilFieldsProof, &keypair.PublicKey, ciphertext)
+	require.False(t, valid, "Verification should fail when proof has nil fields")
 
 	// Test with nil public key
 	valid = VerifyZeroProof(proof, nil, ciphertext)

@@ -8,14 +8,12 @@ import (
 )
 
 func TestValidityProof(t *testing.T) {
-	privateKey, err := elgamal.GenerateKey()
-	altPrivateKey, err := elgamal.GenerateKey()
-
-	require.Nil(t, err)
+	privateKey, _ := elgamal.GenerateKey()
+	altPrivateKey, _ := elgamal.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keys, err := eg.KeyGen(*privateKey, TestDenom)
-	altKeys, err := eg.KeyGen(*altPrivateKey, TestDenom)
+	keys, _ := eg.KeyGen(*privateKey, TestDenom)
+	altKeys, _ := eg.KeyGen(*altPrivateKey, TestDenom)
 
 	message12 := uint64(12)
 	ciphertext12, randomness12, err := eg.Encrypt(keys.PublicKey, message12)

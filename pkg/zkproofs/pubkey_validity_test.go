@@ -8,18 +8,16 @@ import (
 )
 
 func TestPubKeyValidityProof(t *testing.T) {
-	privateKey, err := elgamal.GenerateKey()
-	altPrivateKey, err := elgamal.GenerateKey()
-	require.Nil(t, err)
+	privateKey, _ := elgamal.GenerateKey()
+	altPrivateKey, _ := elgamal.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keys, err := eg.KeyGen(*privateKey, TestDenom)
-	altKeys, err := eg.KeyGen(*altPrivateKey, TestDenom)
-	require.Nil(t, err)
+	keys, _ := eg.KeyGen(*privateKey, TestDenom)
+	altKeys, _ := eg.KeyGen(*altPrivateKey, TestDenom)
 
 	// Prove knowledge of the private key
 	proof, err := NewPubKeyValidityProof(keys.PublicKey, keys.PrivateKey)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Verify the proof
 	valid := VerifyPubKeyValidityProof(keys.PublicKey, *proof)

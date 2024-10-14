@@ -162,11 +162,8 @@ func VerifyCiphertextCommitmentEquality(
 	lhsY2 := zxG2.Add(zrH)       // zx * G + zr * H
 	cCPed := cPed.Mul(c)         // c * cPed
 	rhsY2 := cCPed.Add(proof.Y2) // c * cPed + Y2
-	if !lhsY2.Equal(rhsY2) {
-		return false
-	}
 
-	return true
+	return lhsY2.Equal(rhsY2)
 }
 
 // MarshalJSON for CiphertextCommitmentEqualityProof
