@@ -61,12 +61,12 @@ jobs:
       - name: Determine packages to test (excluding elgamal)
         id: packages
         run: |
-          PACKAGES=$(go list ./... | grep -v '/pkg/encryption/elgamal')
+          PACKAGES=$(go list ./... | grep -v '/pkg/encryption/elgamal$')
           echo "PACKAGES=$PACKAGES" >> $GITHUB_ENV
 
       - name: Run general unit tests
         run: |
-          go test -mod=readonly -race -v -timeout 5m $PACKAGES
+          go test -mod=readonly -race -v -timeout 5m ${PACKAGES}
 
   # Define a matrix for ElGamal package test subsets
   elgamal-tests:
