@@ -36,10 +36,11 @@ func NewRangeProof(upperBound, value int, randomness curves.Scalar) (*RangeProof
 	g := eg.GetG()
 	h := eg.GetH()
 	u := curve.Point.Random(crand.Reader)
+	proofGenerators := bulletproof.NewRangeProofGenerators(g, h, u)
 	transcript := getTranscript()
 
 	vScalar := curve.Scalar.New(value)
-	proof, err := prover.Prove(vScalar, randomness, upperBound, g, h, u, transcript)
+	proof, err := prover.Prove(vScalar, randomness, upperBound, proofGenerators, transcript)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +72,8 @@ func VerifyRangeProof(proof *RangeProof, ciphertext *elgamal.Ciphertext) (bool, 
 	eg := elgamal.NewTwistedElgamal()
 	g := eg.GetG()
 	h := eg.GetH()
-
-	verified, err := verifier.Verify(proof.Proof, ciphertext.C, g, h, proof.Randomness, proof.UpperBound, getTranscript())
+	proofGenerators := bulletproof.NewRangeProofGenerators(g, h, proof.Randomness)
+	verified, err := verifier.Verify(proof.Proof, ciphertext.C, proofGenerators, proof.UpperBound, getTranscript())
 	if err != nil {
 		return false, err
 	}

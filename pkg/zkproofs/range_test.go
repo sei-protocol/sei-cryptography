@@ -32,8 +32,10 @@ func TestValueIsInRange(t *testing.T) {
 	g := eg.GetG()
 	h := eg.GetH()
 	u := curve.Point.Random(crand.Reader)
+
+	proofGenerators := bulletproof.NewRangeProofGenerators(g, h, u)
 	transcript := merlin.NewTranscript("test")
-	proof, err := prover.Prove(v, gamma, n, g, h, u, transcript)
+	proof, err := prover.Prove(v, gamma, n, proofGenerators, transcript)
 	require.NoError(t, err)
 
 	// Verifier gets the proof, the commitment, the generators to verify the value is within the range
@@ -41,13 +43,13 @@ func TestValueIsInRange(t *testing.T) {
 	require.NoError(t, err)
 
 	transcriptVerifier := merlin.NewTranscript("test")
-	verified, err := verifier.Verify(proof, ciphertext.C, g, h, u, n, transcriptVerifier)
+	verified, err := verifier.Verify(proof, ciphertext.C, proofGenerators, n, transcriptVerifier)
 	require.NoError(t, err)
 	require.True(t, verified)
 
 	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, uint64(101))
 	require.Nil(t, err)
-	verified, err = verifier.Verify(proof, ciphertext101.C, g, h, u, n, transcriptVerifier)
+	verified, err = verifier.Verify(proof, ciphertext101.C, proofGenerators, n, transcriptVerifier)
 	require.Error(t, err)
 	require.False(t, verified)
 }
@@ -71,8 +73,10 @@ func TestRangeAttacksAreInfeasible(t *testing.T) {
 	g := eg.GetG()
 	h := eg.GetH()
 	u := curve.Point.Random(crand.Reader)
+	proofGenerators := bulletproof.NewRangeProofGenerators(g, h, u)
 	transcript := merlin.NewTranscript("test")
-	proof, err := prover.Prove(v, gamma, n, g, h, u, transcript)
+
+	proof, err := prover.Prove(v, gamma, n, proofGenerators, transcript)
 	require.NoError(t, err)
 
 	// for 90 to 110 generate ciphertexts and see if we can guess the encrypted value
@@ -84,7 +88,7 @@ func TestRangeAttacksAreInfeasible(t *testing.T) {
 		verifier, e := bulletproof.NewRangeVerifier(n, []byte("rangeDomain"), []byte("ippDomain"), *curve)
 		require.NoError(t, e)
 
-		verified, _ := verifier.Verify(proof, ct.C, g, h, u, n, transcriptVerifier)
+		verified, _ := verifier.Verify(proof, ct.C, proofGenerators, n, transcriptVerifier)
 		if verified {
 			t.Errorf("Attack successful: the number is %d", i)
 		}
@@ -101,7 +105,7 @@ func TestRangeAttacksAreInfeasible(t *testing.T) {
 		transcriptVerifier := merlin.NewTranscript("test")
 
 		require.NoError(t, e)
-		verified, _ := verifier.Verify(proof, ciphertext.C, g, h, u, i, transcriptVerifier)
+		verified, _ := verifier.Verify(proof, ciphertext.C, proofGenerators, i, transcriptVerifier)
 		if verified {
 			t.Errorf("Attack successful: the number is in the range 2^%d", i)
 		}
@@ -118,8 +122,9 @@ func TestRangeVerifyNotInRange(t *testing.T) {
 	g := curve.Point.Random(crand.Reader)
 	h := curve.Point.Random(crand.Reader)
 	u := curve.Point.Random(crand.Reader)
+	proofGenerators := bulletproof.NewRangeProofGenerators(g, h, u)
 	transcript := merlin.NewTranscript("test")
-	_, err = prover.Prove(v, gamma, n, g, h, u, transcript)
+	_, err = prover.Prove(v, gamma, n, proofGenerators, transcript)
 	require.Error(t, err)
 }
 
@@ -133,8 +138,9 @@ func TestRangeVerifyNotInRangeNegativeValue(t *testing.T) {
 	g := curve.Point.Random(crand.Reader)
 	h := curve.Point.Random(crand.Reader)
 	u := curve.Point.Random(crand.Reader)
+	proofGenerators := bulletproof.NewRangeProofGenerators(g, h, u)
 	transcript := merlin.NewTranscript("test")
-	_, err = prover.Prove(v, gamma, n, g, h, u, transcript)
+	_, err = prover.Prove(v, gamma, n, proofGenerators, transcript)
 	require.Error(t, err)
 }
 
