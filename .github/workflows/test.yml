@@ -1,0 +1,137 @@
+name: Unit Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-go-build.outputs.cache-hit }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.21
+
+      - name: Cache Go modules and build cache
+        id: cache-go-build
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/golangci-lint
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-build-
+
+  # General Tests Job (Excluding ElGamal)
+  tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.21
+
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/golangci-lint
+            ~/.cache/go-build
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Determine packages to test (excluding elgamal)
+        id: packages
+        run: |
+          PACKAGES=$(go list ./... | grep -v '/pkg/encryption/elgamal')
+          echo "PACKAGES=$PACKAGES" >> $GITHUB_ENV
+
+      - name: Run general unit tests
+        run: |
+          go test -mod=readonly -race -v -timeout 5m $PACKAGES
+
+  # Define a matrix for ElGamal package test subsets
+  elgamal-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test_group: [
+          'EncryptionDecryption',
+          'KeyGeneration',
+          '48BitEncryptionDecryption',
+          'AddCiphertext',
+          'TwistedElGamal'
+        ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.21
+
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/golangci-lint
+            ~/.cache/go-build
+          key: ${{ needs.setup.outputs.cache-key }}
+
+      - name: Run ElGamal ${{ matrix.test_group }} tests
+        run: |
+          cd pkg/encryption/elgamal
+          mapfile -t TESTS < <(go list -f '{{.Dir}}/*.go' ./...)
+          # Modify the run pattern based on your test naming conventions
+          go test -mod=readonly -race -timeout 20m -run ^Test${{ matrix.test_group }} -v ./...
+
+  unit-test-check:
+    name: Unit Test Check
+    runs-on: ubuntu-latest
+    needs:
+      - tests
+      - elgamal-tests
+    if: always()
+    steps:
+      - name: Get workflow conclusion
+        id: workflow_conclusion
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 2
+          retry_on: error
+          timeout_seconds: 30
+          command: |
+            jobs=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs)
+            job_statuses=$(echo "$jobs" | jq -r '.jobs[] | .conclusion')
+
+            for status in $job_statuses
+            do
+              echo "Status: $status"
+              if [[ "$status" == "failure" ]]; then
+                echo "Some or all tests have failed!"
+                exit 1
+              fi
+            done
+
+            echo "All tests have passed!"

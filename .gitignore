@@ -23,3 +23,7 @@ go.work.sum
 
 # env file
 .env
+/.idea/modules.xml
+/.idea/sei-cryptography.iml
+/.idea/vcs.xml
+/.idea/.gitignore
