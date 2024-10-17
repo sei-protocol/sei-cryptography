@@ -19,13 +19,13 @@ type CiphertextValidityProof struct {
 
 // NewCiphertextValidityProof generates a zero-knowledge proof that the given ciphertext is properly encrypted using the given Public Key.
 // Parameters:
-// - r: The randomness factor used in the encryption.
+// - pedersenOpening: The randomness factor used in the encrypting the Ciphertext.
 // - pubKey: The public key used in the encryption.
-// - ct: The ciphertext to prove the validity of.
+// - ciphertext: The ciphertext to prove the validity of.
 // - message: The message that was encrypted in the ciphertext.
-func NewCiphertextValidityProof(r *curves.Scalar, pubKey curves.Point, ct *elgamal.Ciphertext, message uint64) (*CiphertextValidityProof, error) {
+func NewCiphertextValidityProof(pedersenOpening *curves.Scalar, pubKey curves.Point, ciphertext *elgamal.Ciphertext, message uint64) (*CiphertextValidityProof, error) {
 	// Validate input
-	if r == nil {
+	if pedersenOpening == nil {
 		return nil, errors.New("invalid randomness factor")
 	}
 
@@ -33,7 +33,7 @@ func NewCiphertextValidityProof(r *curves.Scalar, pubKey curves.Point, ct *elgam
 		return nil, errors.New("invalid public key")
 	}
 
-	if ct == nil || ct.C == nil || ct.D == nil {
+	if ciphertext == nil || ciphertext.C == nil || ciphertext.D == nil {
 		return nil, errors.New("invalid ciphertext")
 	}
 
@@ -67,8 +67,8 @@ func NewCiphertextValidityProof(r *curves.Scalar, pubKey curves.Point, ct *elgam
 	challenge := transcript.ChallengeScalar()
 
 	// Step 4: Generate responses
-	Response1 := challenge.MulAdd(*r, rBlind) // Response1 = rBlind + challenge * r
-	Response2 := challenge.MulAdd(x, xBlind)  // Response2 = xBlind + challenge * x
+	Response1 := challenge.MulAdd(*pedersenOpening, rBlind) // Response1 = rBlind + challenge * pedersenOpening
+	Response2 := challenge.MulAdd(x, xBlind)                // Response2 = xBlind + challenge * x
 
 	return &CiphertextValidityProof{
 		Commitment1: Commitment1,
@@ -78,15 +78,15 @@ func NewCiphertextValidityProof(r *curves.Scalar, pubKey curves.Point, ct *elgam
 	}, nil
 }
 
-// VerifyCiphertextValidityProof verifies the zero-knowledge proof that a ciphertext is valid.
+// VerifyCiphertextValidity verifies the zero-knowledge proof that a ciphertext is valid.
 // Parameters:
 // - proof: The proof to verify.
 // - pubKey: The public key used in the encryption.
-// - ct: The ciphertext to prove the validity of.
-func VerifyCiphertextValidityProof(proof *CiphertextValidityProof, pubKey curves.Point, ct *elgamal.Ciphertext) bool {
+// - ciphertext: The ciphertext to prove the validity of.
+func VerifyCiphertextValidity(proof *CiphertextValidityProof, pubKey curves.Point, ciphertext *elgamal.Ciphertext) bool {
 	// Validate input
 	if proof == nil || proof.Commitment1 == nil || proof.Commitment2 == nil || proof.Response1 == nil ||
-		proof.Response2 == nil || pubKey == nil || ct == nil || ct.C == nil || ct.D == nil {
+		proof.Response2 == nil || pubKey == nil || ciphertext == nil || ciphertext.C == nil || ciphertext.D == nil {
 		return false
 	}
 
@@ -101,13 +101,13 @@ func VerifyCiphertextValidityProof(proof *CiphertextValidityProof, pubKey curves
 	challenge := transcript.ChallengeScalar()
 
 	// Step 1: Recompute Commitment1
-	response1H := H.Mul(proof.Response1) // response1 * H
-	response2G := G.Mul(proof.Response2) // response2 * G
-	challengeC := ct.C.Mul(challenge)    // challenge * C
+	response1H := H.Mul(proof.Response1)      // response1 * H
+	response2G := G.Mul(proof.Response2)      // response2 * G
+	challengeC := ciphertext.C.Mul(challenge) // challenge * C
 	recomputedCommitment1 := response1H.Add(response2G).Sub(challengeC)
 
 	// Step 2: Recompute Commitment2
-	challengeD := ct.D.Mul(challenge) // challenge * D
+	challengeD := ciphertext.D.Mul(challenge) // challenge * D
 	recomputedCommitment2 := pubKey.Mul(proof.Response1).Sub(challengeD)
 
 	// Step 3: Check if the recomputed commitments match the original commitments

@@ -22,39 +22,39 @@ func TestValidityProof(t *testing.T) {
 	proof12, err := NewCiphertextValidityProof(&randomness12, keys.PublicKey, ciphertext12, message12)
 	require.Nil(t, err)
 
-	validated := VerifyCiphertextValidityProof(proof12, keys.PublicKey, ciphertext12)
+	validated := VerifyCiphertextValidity(proof12, keys.PublicKey, ciphertext12)
 	require.True(t, validated, "Validating with the correct parameters should validate as true")
 
-	validated = VerifyCiphertextValidityProof(proof12, altKeys.PublicKey, ciphertext12)
+	validated = VerifyCiphertextValidity(proof12, altKeys.PublicKey, ciphertext12)
 	require.False(t, validated, "Validating with the wrong PublicKey should validate as false")
 
 	// Encrypt a message (e.g., x = 42)
 	message42 := uint64(42)
 	ciphertext42, randomness42, _ := eg.Encrypt(keys.PublicKey, message42)
 
-	validated = VerifyCiphertextValidityProof(proof12, altKeys.PublicKey, ciphertext42)
+	validated = VerifyCiphertextValidity(proof12, altKeys.PublicKey, ciphertext42)
 	require.False(t, validated, "Validating with the wrong ciphertext should validate as false")
 
 	// Generate proof using the wrong pubkey
 	wrongProof, err := NewCiphertextValidityProof(&randomness12, altKeys.PublicKey, ciphertext12, message12)
 	require.Nil(t, err)
-	validated = VerifyCiphertextValidityProof(wrongProof, keys.PublicKey, ciphertext12)
+	validated = VerifyCiphertextValidity(wrongProof, keys.PublicKey, ciphertext12)
 	require.False(t, validated, "Proof generated with the wrong PublicKey should validate as false")
 
-	validated = VerifyCiphertextValidityProof(wrongProof, altKeys.PublicKey, ciphertext12)
+	validated = VerifyCiphertextValidity(wrongProof, altKeys.PublicKey, ciphertext12)
 	require.False(t, validated, "Proof generated with the wrong PublicKey should validate as false even"+
 		" when using the same pubkey to validate")
 
 	// Generate proof using the wrong randomness
 	wrongProof, err = NewCiphertextValidityProof(&randomness42, keys.PublicKey, ciphertext12, message12)
 	require.Nil(t, err)
-	validated = VerifyCiphertextValidityProof(wrongProof, keys.PublicKey, ciphertext12)
+	validated = VerifyCiphertextValidity(wrongProof, keys.PublicKey, ciphertext12)
 	require.False(t, validated, "Proof generated with the wrong randomness should validate as false")
 
 	// Generate proof with the wrong ciphertext
 	wrongProof, err = NewCiphertextValidityProof(&randomness42, keys.PublicKey, ciphertext12, message42)
 	require.Nil(t, err)
-	validated = VerifyCiphertextValidityProof(wrongProof, keys.PublicKey, ciphertext12)
+	validated = VerifyCiphertextValidity(wrongProof, keys.PublicKey, ciphertext12)
 	require.False(t, validated, "Proof generated with the wrong ciphertext should validate as false")
 }
 
@@ -143,24 +143,24 @@ func TestVerifyCiphertextValidityProof_Invalid_Input(t *testing.T) {
 
 	t.Run("Invalid (nil) proof", func(t *testing.T) {
 		// Proof commitment1 is nil
-		validated := VerifyCiphertextValidityProof(nil, keys.PublicKey, ciphertext)
+		validated := VerifyCiphertextValidity(nil, keys.PublicKey, ciphertext)
 		require.False(t, validated, "Validation should fail for nil commitment1")
 	})
 
 	t.Run("Invalid proof with nil fields", func(t *testing.T) {
-		validated := VerifyCiphertextValidityProof(&CiphertextValidityProof{}, keys.PublicKey, ciphertext)
+		validated := VerifyCiphertextValidity(&CiphertextValidityProof{}, keys.PublicKey, ciphertext)
 		require.False(t, validated, "Validation should fail for proof with nil fields")
 	})
 
 	t.Run("Invalid Public Key", func(t *testing.T) {
 		// Proof challenge is nil
-		validated := VerifyCiphertextValidityProof(proof, nil, ciphertext)
+		validated := VerifyCiphertextValidity(proof, nil, ciphertext)
 		require.False(t, validated, "Validation should fail for nil challenge")
 	})
 
 	t.Run("Invalid Ciphertext", func(t *testing.T) {
 		// Proof response1 is nil
-		validated := VerifyCiphertextValidityProof(proof, keys.PublicKey, nil)
+		validated := VerifyCiphertextValidity(proof, keys.PublicKey, nil)
 		require.False(t, validated, "Validation should fail for nil response1")
 	})
 }
