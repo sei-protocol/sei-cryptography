@@ -78,7 +78,8 @@ func NewCiphertextValidityProof(pedersenOpening *curves.Scalar, pubKey curves.Po
 	}, nil
 }
 
-// VerifyCiphertextValidity verifies the zero-knowledge proof that a ciphertext is valid.
+// VerifyCiphertextValidity verifies that some ciphertext is properly encrypted by the given Public Key, with the help
+// of proof sent by the prover.
 // Parameters:
 // - proof: The proof to verify.
 // - pubKey: The public key used in the encryption.

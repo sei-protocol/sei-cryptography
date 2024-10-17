@@ -20,16 +20,16 @@ func TestPubKeyValidityProof(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the proof
-	valid := VerifyPubKeyValidityProof(keys.PublicKey, *proof)
+	valid := VerifyPubKeyValidity(keys.PublicKey, *proof)
 	require.True(t, valid, "Valid Proof should be validated as true")
 
-	invalid := VerifyPubKeyValidityProof(altKeys.PublicKey, *proof)
+	invalid := VerifyPubKeyValidity(altKeys.PublicKey, *proof)
 	require.False(t, invalid, "Proof should be invalid when trying to validate wrong PublicKey")
 
 	// Generate proof with the wrong private key.
 	badProof, err := NewPubKeyValidityProof(keys.PublicKey, altKeys.PrivateKey)
 	require.Nil(t, err)
-	invalid = VerifyPubKeyValidityProof(keys.PublicKey, *badProof)
+	invalid = VerifyPubKeyValidity(keys.PublicKey, *badProof)
 	require.False(t, invalid, "Proof generated with wrong Privkey should be validated as false.")
 }
 
@@ -79,11 +79,11 @@ func TestVerifyPubKeyValidityProof_InvalidInput(t *testing.T) {
 	require.Nil(t, err)
 
 	// Verify the proof
-	valid := VerifyPubKeyValidityProof(nil, *proof)
+	valid := VerifyPubKeyValidity(nil, *proof)
 	require.False(t, valid, "proof verification should fail for nil public key")
 
 	invalidProof := PubKeyValidityProof{}
 
-	valid = VerifyPubKeyValidityProof(keys.PublicKey, invalidProof)
+	valid = VerifyPubKeyValidity(keys.PublicKey, invalidProof)
 	require.False(t, valid, "proof verification should fail for invalid proof")
 }

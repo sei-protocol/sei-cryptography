@@ -2,7 +2,6 @@ package zkproofs
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"github.com/coinbase/kryptology/pkg/core/curves"
@@ -20,8 +19,11 @@ type PubKeyValidityProof struct {
 	Z curves.Scalar
 }
 
-// NewPubKeyValidityProof generates the sigma protocol proof
-// The proof here is that the creator of this PubKey also knows the corresponding PrivateKey
+// NewPubKeyValidityProof generates the proof the creator of the given PublicKey also knows the associated PrivateKey,
+// and that the PublicKey is thus valid.
+// Parameters:
+// - pubKey: The PublicKey to prove the validity of.
+// - privKey: The PrivateKey associated with the PublicKey.
 func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) (*PubKeyValidityProof, error) {
 	// Validate input
 	if pubKey == nil {
@@ -41,7 +43,10 @@ func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) (*PubKey
 	Y := H.Mul(y)
 
 	// Generate challenge c based on P and Y
-	c := generateChallenge(pubKey, Y)
+	transcript := NewEqualityProofTranscript()
+	transcript.AppendMessage("P", pubKey.ToAffineCompressed())
+	transcript.AppendMessage("Y", Y.ToAffineCompressed())
+	c := transcript.ChallengeScalar()
 
 	// Compute sInv = s^{-1}
 	sInv, _ := privKey.Invert()
@@ -55,8 +60,12 @@ func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) (*PubKey
 	}, nil
 }
 
-// VerifyPubKeyValidityProof verifies the validity of the proof
-func VerifyPubKeyValidityProof(pubKey curves.Point, proof PubKeyValidityProof) bool {
+// VerifyPubKeyValidity validates that the given PublicKey is a valid PublicKey under the Twisted El Gamal scheme,
+// and that the prover knows the corresponding PrivateKey.
+// Parameters:
+// - pubKey: The PublicKey to validate.
+// - proof: The proof that the prover knows the corresponding PrivateKey.
+func VerifyPubKeyValidity(pubKey curves.Point, proof PubKeyValidityProof) bool {
 	// Validate input
 	if pubKey == nil || proof.Y == nil || proof.Z == nil {
 		return false
@@ -64,8 +73,13 @@ func VerifyPubKeyValidityProof(pubKey curves.Point, proof PubKeyValidityProof) b
 
 	eg := elgamal.NewTwistedElgamal()
 	H := eg.GetH()
+
 	// Recompute the challenge c
-	c := generateChallenge(pubKey, proof.Y)
+	transcript := NewEqualityProofTranscript()
+	transcript.AppendMessage("P", pubKey.ToAffineCompressed())
+	transcript.AppendMessage("Y", proof.Y.ToAffineCompressed())
+
+	c := transcript.ChallengeScalar()
 
 	// Compute lhs = z * H
 	lhs := H.Mul(proof.Z) // lhs = z * H
@@ -76,19 +90,6 @@ func VerifyPubKeyValidityProof(pubKey curves.Point, proof PubKeyValidityProof) b
 
 	// Check if z * H == c * P + Y
 	return lhs.Equal(rhs)
-}
-
-// generateChallenge generates a challenge c by hashing P and Y
-func generateChallenge(P, Y curves.Point) curves.Scalar {
-	// Hash P and Y using SHA-256
-	hash := sha256.New()
-
-	hash.Write(P.ToAffineCompressed())
-	hash.Write(Y.ToAffineCompressed())
-	digest := hash.Sum(nil)
-
-	// Convert hash output into a scalar
-	return curves.ED25519().Scalar.Hash(digest)
 }
 
 // MarshalJSON for PubKeyValidityProof
