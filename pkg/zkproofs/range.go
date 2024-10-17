@@ -19,9 +19,11 @@ type RangeProof struct {
 	UpperBound int
 }
 
-// NewRangeProof a range proof for some ciphertext that proves the value is between 0 and 2^upperBound
-// Note that while this proof generator takes in the plaintext of the value, it will only work in conjunction with a
-// ciphertext that encrypts value using the given randomness.
+// NewRangeProof generates a range proof for some ciphertext that proves the value is between 0 and 2^upperBound
+// Parameters:
+// - upperBound The upper bound of the range we want to prove the value lies within, calculated as 2^upperBound
+// - value: The value encrypted by the ciphertext on which we are creating this proof for
+// - randomness: The randomness used in the generation of the ciphertext on which we are creating this proof for
 func NewRangeProof(upperBound, value int, randomness curves.Scalar) (*RangeProof, error) {
 	if randomness == nil {
 		return nil, errors.New("invalid randomness factor")
@@ -52,7 +54,11 @@ func NewRangeProof(upperBound, value int, randomness curves.Scalar) (*RangeProof
 }
 
 // VerifyRangeProof verifies the range proof for the given ciphertext
-func VerifyRangeProof(proof *RangeProof, ciphertext *elgamal.Ciphertext) (bool, error) {
+// Parameters:
+// - proof: The range proof to verify
+// - ciphertext: The ciphertext for which we are verifying the range proof
+// - upperBound: The upper bound of the range we want to prove the value lies within, calculated as 2^upperBound
+func VerifyRangeProof(proof *RangeProof, ciphertext *elgamal.Ciphertext, upperBound int) (bool, error) {
 	// Validate input
 	if proof == nil || proof.Proof == nil || proof.Randomness == nil {
 		return false, errors.New("invalid proof")
@@ -64,7 +70,7 @@ func VerifyRangeProof(proof *RangeProof, ciphertext *elgamal.Ciphertext) (bool, 
 
 	curve := curves.ED25519()
 	// Verifier gets the proof, the commitment, the generators to verify the value is within the range
-	verifier, err := bulletproof.NewRangeVerifier(proof.UpperBound, getRangeDomain(), getIppDomain(), *curve)
+	verifier, err := bulletproof.NewRangeVerifier(upperBound, getRangeDomain(), getIppDomain(), *curve)
 	if err != nil {
 		return false, err
 	}

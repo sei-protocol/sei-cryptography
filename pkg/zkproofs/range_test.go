@@ -160,7 +160,7 @@ func TestRangeProofs(t *testing.T) {
 	proof, err := NewRangeProof(n, value, gamma)
 	require.Nil(t, err)
 
-	verified, err := VerifyRangeProof(proof, ciphertext)
+	verified, err := VerifyRangeProof(proof, ciphertext, n)
 	require.NoError(t, err)
 	require.True(t, verified)
 
@@ -168,7 +168,7 @@ func TestRangeProofs(t *testing.T) {
 	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, uint64(101))
 	require.Nil(t, err)
 
-	verified, err = VerifyRangeProof(proof, ciphertext101)
+	verified, err = VerifyRangeProof(proof, ciphertext101, n)
 	require.Error(t, err)
 	require.False(t, verified)
 }
@@ -200,7 +200,7 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 	err = json.Unmarshal(marshaledProof, &unmarshaled)
 	require.NoError(t, err, "Unmarshaling should not produce an error")
 
-	verified, err := VerifyRangeProof(&unmarshaled, ciphertext)
+	verified, err := VerifyRangeProof(&unmarshaled, ciphertext, n)
 	require.NoError(t, err)
 	require.True(t, verified)
 }
@@ -243,27 +243,27 @@ func TestVerifyRangeProof_InvalidInput(t *testing.T) {
 
 	t.Run("Nil proof", func(t *testing.T) {
 		// Proof is nil
-		valid, err := VerifyRangeProof(nil, ciphertext)
+		valid, err := VerifyRangeProof(nil, ciphertext, 64)
 		require.EqualError(t, err, "invalid proof")
 		require.False(t, valid)
 	})
 
 	t.Run("Proof with nil fields", func(t *testing.T) {
-		valid, err := VerifyRangeProof(&RangeProof{}, ciphertext)
+		valid, err := VerifyRangeProof(&RangeProof{}, ciphertext, 64)
 		require.EqualError(t, err, "invalid proof")
 		require.False(t, valid)
 	})
 
 	t.Run("nil ciphertext", func(t *testing.T) {
 		// Proof is nil
-		valid, err := VerifyRangeProof(proof, nil)
+		valid, err := VerifyRangeProof(proof, nil, 64)
 		require.EqualError(t, err, "invalid ciphertext")
 		require.False(t, valid)
 	})
 
 	t.Run("Ciphertext with nil fields", func(t *testing.T) {
 		// Proof is nil
-		valid, err := VerifyRangeProof(proof, &elgamal.Ciphertext{})
+		valid, err := VerifyRangeProof(proof, &elgamal.Ciphertext{}, 64)
 		require.EqualError(t, err, "invalid ciphertext")
 		require.False(t, valid)
 	})
