@@ -16,6 +16,9 @@ type ZeroBalanceProof struct {
 }
 
 // NewZeroBalanceProof generates a zero-knowledge proof that a ciphertext encrypts 0 number.
+// Parameters:
+// - keypair: The Twisted El Gamal Keypair used to generate the given ciphertext
+// - ciphertext: The Ciphertext which we want to prove encrypts a value of 0
 func NewZeroBalanceProof(
 	keypair *elgamal.KeyPair,
 	ciphertext *elgamal.Ciphertext,
@@ -58,8 +61,12 @@ func NewZeroBalanceProof(
 	}, nil
 }
 
-// VerifyZeroProof verifies the validity of the proof
-func VerifyZeroProof(
+// VerifyZeroBalance verifies the that ciphertext encrypts 0 number.
+// Parameters:
+// - proof: The ZeroBalanceProof to verify
+// - pubKey: The public key used to encrypt the ciphertext
+// - ciphertext: The ciphertext to verify
+func VerifyZeroBalance(
 	proof *ZeroBalanceProof,
 	pubKey *curves.Point,
 	ciphertext *elgamal.Ciphertext,

@@ -63,7 +63,7 @@ func TestZeroBalanceProof(t *testing.T) {
 			}
 
 			// Verify the proof
-			valid := VerifyZeroProof(proof, &keypair.PublicKey, ciphertext)
+			valid := VerifyZeroBalance(proof, &keypair.PublicKey, ciphertext)
 			if valid != tt.expectValid {
 				t.Errorf("Expected proof validity to be %v, got %v", tt.expectValid, valid)
 			}
@@ -119,7 +119,7 @@ func TestZeroBalanceProof_InvalidRandomness(t *testing.T) {
 	}
 
 	// Verify the proof
-	valid := VerifyZeroProof(invalidProof, &keypair.PublicKey, ciphertext)
+	valid := VerifyZeroBalance(invalidProof, &keypair.PublicKey, ciphertext)
 	require.False(t, valid, "Proof with invalid randomness fields should fail verification")
 }
 
@@ -149,7 +149,7 @@ func TestZeroBalanceProof_ExtremelyLargeScalars(t *testing.T) {
 	proof.Z = largeScalar
 
 	// Verify the proof
-	valid := VerifyZeroProof(proof, &keypair.PublicKey, ciphertext)
+	valid := VerifyZeroBalance(proof, &keypair.PublicKey, ciphertext)
 	require.False(t, valid, "Proof with extremely large scalar Z should fail verification")
 }
 
@@ -242,29 +242,29 @@ func TestVerifyZeroProof_InvalidInput(t *testing.T) {
 	require.NoError(t, err, "Failed to generate proof")
 
 	// Test with nil proof
-	valid := VerifyZeroProof(nil, &keypair.PublicKey, ciphertext)
+	valid := VerifyZeroBalance(nil, &keypair.PublicKey, ciphertext)
 	require.False(t, valid, "Verification should fail when proof is nil")
 
 	nilFieldsProof := &ZeroBalanceProof{}
-	valid = VerifyZeroProof(nilFieldsProof, &keypair.PublicKey, ciphertext)
+	valid = VerifyZeroBalance(nilFieldsProof, &keypair.PublicKey, ciphertext)
 	require.False(t, valid, "Verification should fail when proof has nil fields")
 
 	// Test with nil public key
-	valid = VerifyZeroProof(proof, nil, ciphertext)
+	valid = VerifyZeroBalance(proof, nil, ciphertext)
 	require.False(t, valid, "Verification should fail when public key is nil")
 
 	// Test with nil ciphertext
-	valid = VerifyZeroProof(proof, &keypair.PublicKey, nil)
+	valid = VerifyZeroBalance(proof, &keypair.PublicKey, nil)
 	require.False(t, valid, "Verification should fail when ciphertext is nil")
 
 	// Test with nil D in ciphertext
 	invalidCiphertext1 := &elgamal.Ciphertext{C: keypair.PublicKey, D: nil}
-	valid = VerifyZeroProof(proof, &keypair.PublicKey, invalidCiphertext1)
+	valid = VerifyZeroBalance(proof, &keypair.PublicKey, invalidCiphertext1)
 	require.False(t, valid, "Verification should fail when ciphertext.D is nil")
 
 	// Test with nil C in ciphertext
 	invalidCiphertext2 := &elgamal.Ciphertext{C: nil, D: keypair.PublicKey}
-	valid = VerifyZeroProof(proof, &keypair.PublicKey, invalidCiphertext2)
+	valid = VerifyZeroBalance(proof, &keypair.PublicKey, invalidCiphertext2)
 	require.False(t, valid, "Verification should fail when ciphertext.C is nil")
 
 	// Test with invalid proof values
@@ -274,6 +274,6 @@ func TestVerifyZeroProof_InvalidInput(t *testing.T) {
 		Yd: curve.Point.Double(),
 		Z:  curve.Scalar.Zero(),
 	}
-	valid = VerifyZeroProof(invalidProof, &keypair.PublicKey, ciphertext)
+	valid = VerifyZeroBalance(invalidProof, &keypair.PublicKey, ciphertext)
 	require.False(t, valid, "Verification should fail with invalid proof values")
 }
