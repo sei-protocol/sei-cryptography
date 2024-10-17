@@ -20,6 +20,11 @@ type CiphertextCommitmentEqualityProof struct {
 }
 
 // NewCiphertextCommitmentEqualityProof generates a new equality proof between a ciphertext and a Pedersen commitment.
+// Parameters:
+// - sourceKeypair: The ElGamal keypair associated with the ciphertext to be proved.
+// - sourceCiphertext: The ElGamal ciphertext for which the prover knows a decryption key.
+// - pedersenOpening: The opening (randomness) associated with the Pedersen commitment.
+// - amount: The message associated with the ElGamal ciphertext and Pedersen commitment.
 func NewCiphertextCommitmentEqualityProof(
 	sourceKeypair *elgamal.KeyPair,
 	sourceCiphertext *elgamal.Ciphertext,
@@ -102,6 +107,11 @@ func NewCiphertextCommitmentEqualityProof(
 
 // VerifyCiphertextCommitmentEquality verifies the zero-knowledge equality proof between a ciphertext and a Pedersen
 // commitment.
+// Parameters:
+// - proof: The proof to be verified.
+// - sourcePubKey: The public key associated with the ciphertext to be proved.
+// - sourceCiphertext: The ElGamal ciphertext for which the prover knows a decryption key.
+// - pedersenCommitment: The Pedersen commitment to be proved.
 func VerifyCiphertextCommitmentEquality(
 	proof *CiphertextCommitmentEqualityProof,
 	sourcePubKey *curves.Point,

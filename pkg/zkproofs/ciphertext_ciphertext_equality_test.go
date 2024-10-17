@@ -35,7 +35,7 @@ func TestCiphertextCiphertextEqualityProof(t *testing.T) {
 			expectValid:           false,
 		},
 		{
-			name:                  "Invalid Proof - Different Public Keys",
+			name:                  "Invalid Proof - Wrong Dest Public Key",
 			sourceAmount:          200,
 			destinationAmount:     200,
 			useDifferentPublicKey: true,

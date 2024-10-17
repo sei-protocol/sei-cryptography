@@ -13,12 +13,16 @@ import (
 type CiphertextValidityProof struct {
 	Commitment1 curves.Point
 	Commitment2 curves.Point
-	Challenge   curves.Scalar
 	Response1   curves.Scalar
 	Response2   curves.Scalar
 }
 
-// NewCiphertextValidityProof generates a zero-knowledge proof that a ciphertext is properly encrypted.
+// NewCiphertextValidityProof generates a zero-knowledge proof that the given ciphertext is properly encrypted using the given Public Key.
+// Parameters:
+// - r: The randomness factor used in the encryption.
+// - pubKey: The public key used in the encryption.
+// - ct: The ciphertext to prove the validity of.
+// - message: The message that was encrypted in the ciphertext.
 func NewCiphertextValidityProof(r *curves.Scalar, pubKey curves.Point, ct *elgamal.Ciphertext, message uint64) (*CiphertextValidityProof, error) {
 	// Validate input
 	if r == nil {
@@ -57,10 +61,10 @@ func NewCiphertextValidityProof(r *curves.Scalar, pubKey curves.Point, ct *elgam
 	// Step 3: Generate a challenge using the Fiat-Shamir heuristic.
 	// The challenge is basically just a hash of all the provided values. This locks in the values and makes sure that
 	// the proof cannot be for some other set of values.
-	hashData := append(Commitment1.ToAffineCompressed(), Commitment2.ToAffineCompressed()...)
-	hashData = append(hashData, ct.C.ToAffineCompressed()...)
-	hashData = append(hashData, ct.D.ToAffineCompressed()...)
-	challenge := ed25519.Scalar.Hash(hashData)
+	transcript := NewEqualityProofTranscript()
+	transcript.AppendMessage("C1", Commitment1.ToAffineCompressed())
+	transcript.AppendMessage("C2", Commitment2.ToAffineCompressed())
+	challenge := transcript.ChallengeScalar()
 
 	// Step 4: Generate responses
 	Response1 := challenge.MulAdd(*r, rBlind) // Response1 = rBlind + challenge * r
@@ -69,17 +73,20 @@ func NewCiphertextValidityProof(r *curves.Scalar, pubKey curves.Point, ct *elgam
 	return &CiphertextValidityProof{
 		Commitment1: Commitment1,
 		Commitment2: Commitment2,
-		Challenge:   challenge,
 		Response1:   Response1,
 		Response2:   Response2,
 	}, nil
 }
 
 // VerifyCiphertextValidityProof verifies the zero-knowledge proof that a ciphertext is valid.
+// Parameters:
+// - proof: The proof to verify.
+// - pubKey: The public key used in the encryption.
+// - ct: The ciphertext to prove the validity of.
 func VerifyCiphertextValidityProof(proof *CiphertextValidityProof, pubKey curves.Point, ct *elgamal.Ciphertext) bool {
 	// Validate input
-	if proof == nil || proof.Commitment1 == nil || proof.Commitment2 == nil || proof.Challenge == nil ||
-		proof.Response1 == nil || proof.Response2 == nil || pubKey == nil || ct == nil || ct.C == nil || ct.D == nil {
+	if proof == nil || proof.Commitment1 == nil || proof.Commitment2 == nil || proof.Response1 == nil ||
+		proof.Response2 == nil || pubKey == nil || ct == nil || ct.C == nil || ct.D == nil {
 		return false
 	}
 
@@ -87,14 +94,20 @@ func VerifyCiphertextValidityProof(proof *CiphertextValidityProof, pubKey curves
 	H := eg.GetH()
 	G := eg.GetG()
 
+	// Step 0: Recompute the challenge using the Fiat-Shamir heuristic.
+	transcript := NewEqualityProofTranscript()
+	transcript.AppendMessage("C1", proof.Commitment1.ToAffineCompressed())
+	transcript.AppendMessage("C2", proof.Commitment2.ToAffineCompressed())
+	challenge := transcript.ChallengeScalar()
+
 	// Step 1: Recompute Commitment1
-	response1H := H.Mul(proof.Response1)    // response1 * H
-	response2G := G.Mul(proof.Response2)    // response2 * G
-	challengeC := ct.C.Mul(proof.Challenge) // challenge * C
+	response1H := H.Mul(proof.Response1) // response1 * H
+	response2G := G.Mul(proof.Response2) // response2 * G
+	challengeC := ct.C.Mul(challenge)    // challenge * C
 	recomputedCommitment1 := response1H.Add(response2G).Sub(challengeC)
 
 	// Step 2: Recompute Commitment2
-	challengeD := ct.D.Mul(proof.Challenge) // challenge * D
+	challengeD := ct.D.Mul(challenge) // challenge * D
 	recomputedCommitment2 := pubKey.Mul(proof.Response1).Sub(challengeD)
 
 	// Step 3: Check if the recomputed commitments match the original commitments
@@ -107,7 +120,6 @@ func (p *CiphertextValidityProof) MarshalJSON() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
 		"commitment1": p.Commitment1.ToAffineCompressed(), // Assuming ToAffineCompressed returns a byte slice
 		"commitment2": p.Commitment2.ToAffineCompressed(),
-		"challenge":   p.Challenge.Bytes(), // Serialize Scalar to bytes
 		"response1":   p.Response1.Bytes(), // Serialize Scalar to bytes
 		"response2":   p.Response2.Bytes(), // Serialize Scalar to bytes
 	})
@@ -119,7 +131,6 @@ func (p *CiphertextValidityProof) UnmarshalJSON(data []byte) error {
 	var temp struct {
 		Commitment1 []byte `json:"commitment1"`
 		Commitment2 []byte `json:"commitment2"`
-		Challenge   []byte `json:"challenge"`
 		Response1   []byte `json:"response1"`
 		Response2   []byte `json:"response2"`
 	}
@@ -139,10 +150,6 @@ func (p *CiphertextValidityProof) UnmarshalJSON(data []byte) error {
 	if err != nil {
 		return err
 	}
-	challenge, err := ed25519.Scalar.SetBytes(temp.Challenge)
-	if err != nil {
-		return err
-	}
 	response1, err := ed25519.Scalar.SetBytes(temp.Response1)
 	if err != nil {
 		return err
@@ -155,7 +162,6 @@ func (p *CiphertextValidityProof) UnmarshalJSON(data []byte) error {
 	// Assign the decoded values to the CiphertextValidityProof struct
 	p.Commitment1 = commitment1
 	p.Commitment2 = commitment2
-	p.Challenge = challenge
 	p.Response1 = response1
 	p.Response2 = response2
 

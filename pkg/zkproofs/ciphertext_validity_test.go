@@ -80,7 +80,6 @@ func TestCiphertextValidityProof_MarshalUnmarshalJSON(t *testing.T) {
 	// Compare the original and unmarshaled proof
 	require.True(t, original.Commitment1.Equal(unmarshaled.Commitment1), "Commitment1 points should be equal")
 	require.True(t, original.Commitment2.Equal(unmarshaled.Commitment2), "Commitment2 points should be equal")
-	require.Equal(t, original.Challenge, unmarshaled.Challenge, "Challenge scalars should be equal")
 	require.Equal(t, original.Response1, unmarshaled.Response1, "Response1 scalars should be equal")
 	require.Equal(t, original.Response2, unmarshaled.Response2, "Response2 scalars should be equal")
 }
