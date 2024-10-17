@@ -93,7 +93,7 @@ func NewCiphertextCiphertextEqualityProof(
 	Y3 := pDestination.Mul(yr)
 
 	// Append to transcript
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("Y0", Y0.ToAffineCompressed())
 	transcript.AppendMessage("Y1", Y1.ToAffineCompressed())
 	transcript.AppendMessage("Y2", Y2.ToAffineCompressed())
@@ -156,7 +156,7 @@ func VerifyCiphertextCiphertextEquality(
 	dDestination := destinationCiphertext.D
 
 	// Recreate the transcript
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	// Append Y0, Y1, Y2, Y3 to transcript
 	transcript.AppendMessage("Y0", proof.Y0.ToAffineCompressed())
 	transcript.AppendMessage("Y1", proof.Y1.ToAffineCompressed())

@@ -43,7 +43,7 @@ func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) (*PubKey
 	Y := H.Mul(y)
 
 	// Generate challenge c based on P and Y
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("P", pubKey.ToAffineCompressed())
 	transcript.AppendMessage("Y", Y.ToAffineCompressed())
 	c := transcript.ChallengeScalar()
@@ -75,7 +75,7 @@ func VerifyPubKeyValidity(pubKey curves.Point, proof PubKeyValidityProof) bool {
 	H := eg.GetH()
 
 	// Recompute the challenge c
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("P", pubKey.ToAffineCompressed())
 	transcript.AppendMessage("Y", proof.Y.ToAffineCompressed())
 

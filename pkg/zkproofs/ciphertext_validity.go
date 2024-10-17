@@ -61,7 +61,7 @@ func NewCiphertextValidityProof(pedersenOpening *curves.Scalar, pubKey curves.Po
 	// Step 3: Generate a challenge using the Fiat-Shamir heuristic.
 	// The challenge is basically just a hash of all the provided values. This locks in the values and makes sure that
 	// the proof cannot be for some other set of values.
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("C1", Commitment1.ToAffineCompressed())
 	transcript.AppendMessage("C2", Commitment2.ToAffineCompressed())
 	challenge := transcript.ChallengeScalar()
@@ -96,7 +96,7 @@ func VerifyCiphertextValidity(proof *CiphertextValidityProof, pubKey curves.Poin
 	G := eg.GetG()
 
 	// Step 0: Recompute the challenge using the Fiat-Shamir heuristic.
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("C1", proof.Commitment1.ToAffineCompressed())
 	transcript.AppendMessage("C2", proof.Commitment2.ToAffineCompressed())
 	challenge := transcript.ChallengeScalar()

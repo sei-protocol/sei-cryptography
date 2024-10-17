@@ -8,7 +8,7 @@ import (
 )
 
 func TestEqualityProofTranscript_AppendMessage(t *testing.T) {
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("label1", []byte("data1"))
 	transcript.AppendMessage("label2", []byte("data2"))
 
@@ -18,7 +18,7 @@ func TestEqualityProofTranscript_AppendMessage(t *testing.T) {
 }
 
 func TestEqualityProofTranscript_ChallengeScalar(t *testing.T) {
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("label1", []byte("data1"))
 	transcript.AppendMessage("label2", []byte("data2"))
 
@@ -34,7 +34,7 @@ func TestEqualityProofTranscript_ChallengeScalar(t *testing.T) {
 }
 
 func TestEqualityProofTranscript_EmptyMessages(t *testing.T) {
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	scalar := transcript.ChallengeScalar()
 
 	hasher := sha512.New()

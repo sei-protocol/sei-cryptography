@@ -6,21 +6,23 @@ import (
 	"github.com/coinbase/kryptology/pkg/core/curves"
 )
 
-type EqualityProofTranscript struct {
+// ProofTranscript represents a transcript of messages used in a zero-knowledge proof
+type ProofTranscript struct {
 	messages [][]byte
 }
 
-func NewEqualityProofTranscript() *EqualityProofTranscript {
-	return &EqualityProofTranscript{messages: make([][]byte, 0)}
+// NewProofTranscript creates a new proof transcript
+func NewProofTranscript() *ProofTranscript {
+	return &ProofTranscript{messages: make([][]byte, 0)}
 }
 
 // AppendMessage appends a message to the transcript
-func (t *EqualityProofTranscript) AppendMessage(label string, data []byte) {
+func (t *ProofTranscript) AppendMessage(label string, data []byte) {
 	t.messages = append(t.messages, append([]byte(label), data...))
 }
 
 // ChallengeScalar generates a challenge scalar from the transcript
-func (t *EqualityProofTranscript) ChallengeScalar() curves.Scalar {
+func (t *ProofTranscript) ChallengeScalar() curves.Scalar {
 	hasher := sha512.New()
 	for _, msg := range t.messages {
 		hasher.Write(msg)

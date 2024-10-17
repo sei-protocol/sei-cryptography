@@ -41,7 +41,7 @@ func NewZeroBalanceProof(
 	Yd := D.Mul(y)
 
 	// Append commitments to the transcript
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("Yp", Yp.ToAffineCompressed())
 	transcript.AppendMessage("Yd", Yd.ToAffineCompressed())
 
@@ -78,7 +78,7 @@ func VerifyZeroProof(
 	H := eg.GetH()
 
 	// Append commitments to the transcript
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("Yp", proof.Yp.ToAffineCompressed())
 	transcript.AppendMessage("Yd", proof.Yd.ToAffineCompressed())
 

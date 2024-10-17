@@ -78,7 +78,7 @@ func NewCiphertextCommitmentEqualityProof(
 	Y2 := yxG.Add(yrH)
 
 	// Append commitments to the transcript
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("Y0", Y0.ToAffineCompressed())
 	transcript.AppendMessage("Y1", Y1.ToAffineCompressed())
 	transcript.AppendMessage("Y2", Y2.ToAffineCompressed())
@@ -140,7 +140,7 @@ func VerifyCiphertextCommitmentEquality(
 	H := eg.GetH()
 
 	// Append commitments to the transcript
-	transcript := NewEqualityProofTranscript()
+	transcript := NewProofTranscript()
 	transcript.AppendMessage("Y0", proof.Y0.ToAffineCompressed())
 	transcript.AppendMessage("Y1", proof.Y1.ToAffineCompressed())
 	transcript.AppendMessage("Y2", proof.Y2.ToAffineCompressed())
