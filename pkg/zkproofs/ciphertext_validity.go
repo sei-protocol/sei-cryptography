@@ -64,6 +64,8 @@ func NewCiphertextValidityProof(pedersenOpening *curves.Scalar, pubKey curves.Po
 	transcript := NewProofTranscript()
 	transcript.AppendMessage("C1", Commitment1.ToAffineCompressed())
 	transcript.AppendMessage("C2", Commitment2.ToAffineCompressed())
+	transcript.AppendMessage("C3", ciphertext.C.ToAffineCompressed())
+	transcript.AppendMessage("C4", ciphertext.D.ToAffineCompressed())
 	challenge := transcript.ChallengeScalar()
 
 	// Step 4: Generate responses
@@ -99,6 +101,8 @@ func VerifyCiphertextValidity(proof *CiphertextValidityProof, pubKey curves.Poin
 	transcript := NewProofTranscript()
 	transcript.AppendMessage("C1", proof.Commitment1.ToAffineCompressed())
 	transcript.AppendMessage("C2", proof.Commitment2.ToAffineCompressed())
+	transcript.AppendMessage("C3", ciphertext.C.ToAffineCompressed())
+	transcript.AppendMessage("C4", ciphertext.D.ToAffineCompressed())
 	challenge := transcript.ChallengeScalar()
 
 	// Step 1: Recompute Commitment1
