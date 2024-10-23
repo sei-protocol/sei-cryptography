@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
+	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"math/big"
@@ -52,7 +53,7 @@ func TestCiphertextCommitmentEqualityProof(t *testing.T) {
 		tt := tt // Capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			// Key generation
-			sourcePrivateKey, _ := elgamal.GenerateKey()
+			sourcePrivateKey, _ := testutils.GenerateKey()
 			eg := elgamal.NewTwistedElgamal()
 			sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
@@ -120,7 +121,7 @@ func TestCiphertextCommitmentEqualityProof(t *testing.T) {
 }
 
 func TestCiphertextCommitmentEqualityProof_MarshalUnmarshalJSON(t *testing.T) {
-	sourcePrivateKey, _ := elgamal.GenerateKey()
+	sourcePrivateKey, _ := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
@@ -161,7 +162,7 @@ func TestCiphertextCommitmentEqualityProof_MarshalUnmarshalJSON(t *testing.T) {
 }
 
 func TestNewCiphertextCommitmentEqualityProof_InvalidInput(t *testing.T) {
-	sourcePrivateKey, _ := elgamal.GenerateKey()
+	sourcePrivateKey, _ := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
@@ -222,7 +223,7 @@ func TestNewCiphertextCommitmentEqualityProof_InvalidInput(t *testing.T) {
 }
 
 func TestVerifyCiphertextCommitmentEquality_InvalidInput(t *testing.T) {
-	sourcePrivateKey, _ := elgamal.GenerateKey()
+	sourcePrivateKey, _ := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 

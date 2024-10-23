@@ -7,6 +7,7 @@ import (
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/gtank/merlin"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
+	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -18,7 +19,7 @@ func TestValueIsInRange(t *testing.T) {
 	v := curve.Scalar.New(value)
 	n := 64 // the range is [0, 2^64]
 
-	privateKey, err := elgamal.GenerateKey()
+	privateKey, err := testutils.GenerateKey()
 	require.Nil(t, err, "Error generating private key")
 
 	eg := elgamal.NewTwistedElgamal()
@@ -59,7 +60,7 @@ func TestRangeAttacksAreInfeasible(t *testing.T) {
 	v := curve.Scalar.New(value)
 	n := 64 // the range is [0, 2^64]
 
-	privateKey, err := elgamal.GenerateKey()
+	privateKey, err := testutils.GenerateKey()
 	require.Nil(t, err, "Error generating private key")
 
 	eg := elgamal.NewTwistedElgamal()
@@ -148,7 +149,7 @@ func TestRangeProofs(t *testing.T) {
 	value := 100
 	n := 64 // the range is [0, 2^64]
 
-	privateKey, err := elgamal.GenerateKey()
+	privateKey, err := testutils.GenerateKey()
 	require.Nil(t, err, "Error generating private key")
 
 	eg := elgamal.NewTwistedElgamal()
@@ -179,7 +180,7 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 	value := 100
 	n := 64 // the range is [0, 2^64]
 
-	privateKey, err := elgamal.GenerateKey()
+	privateKey, err := testutils.GenerateKey()
 	require.Nil(t, err, "Error generating private key")
 
 	eg := elgamal.NewTwistedElgamal()
@@ -206,7 +207,7 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 }
 
 func TestRangeProofs_InvalidInput(t *testing.T) {
-	privateKey, err := elgamal.GenerateKey()
+	privateKey, err := testutils.GenerateKey()
 	require.Nil(t, err, "Error generating private key")
 
 	eg := elgamal.NewTwistedElgamal()
@@ -233,7 +234,7 @@ func TestRangeProofs_InvalidInput(t *testing.T) {
 }
 
 func TestVerifyRangeProof_InvalidInput(t *testing.T) {
-	privateKey, _ := elgamal.GenerateKey()
+	privateKey, _ := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keyPair, _ := eg.KeyGen(*privateKey, TestDenom)
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(10))

@@ -3,13 +3,14 @@ package zkproofs
 import (
 	"encoding/json"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
+	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestValidityProof(t *testing.T) {
-	privateKey, _ := elgamal.GenerateKey()
-	altPrivateKey, _ := elgamal.GenerateKey()
+	privateKey, _ := testutils.GenerateKey()
+	altPrivateKey, _ := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
@@ -59,7 +60,7 @@ func TestValidityProof(t *testing.T) {
 }
 
 func TestCiphertextValidityProof_MarshalUnmarshalJSON(t *testing.T) {
-	privateKey, _ := elgamal.GenerateKey()
+	privateKey, _ := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
@@ -85,7 +86,7 @@ func TestCiphertextValidityProof_MarshalUnmarshalJSON(t *testing.T) {
 }
 
 func TestNewCiphertextValidityProof_InvalidInput(t *testing.T) {
-	privateKey, _ := elgamal.GenerateKey()
+	privateKey, _ := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
@@ -131,7 +132,7 @@ func TestNewCiphertextValidityProof_InvalidInput(t *testing.T) {
 }
 
 func TestVerifyCiphertextValidityProof_Invalid_Input(t *testing.T) {
-	privateKey, _ := elgamal.GenerateKey()
+	privateKey, _ := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 

@@ -3,13 +3,14 @@ package zkproofs
 import (
 	"encoding/json"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
+	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestPubKeyValidityProof(t *testing.T) {
-	privateKey, _ := elgamal.GenerateKey()
-	altPrivateKey, _ := elgamal.GenerateKey()
+	privateKey, _ := testutils.GenerateKey()
+	altPrivateKey, _ := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
@@ -34,7 +35,7 @@ func TestPubKeyValidityProof(t *testing.T) {
 }
 
 func TestPubKeyValidityProof_MarshalUnmarshalJSON(t *testing.T) {
-	privateKey, _ := elgamal.GenerateKey()
+	privateKey, _ := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
@@ -55,7 +56,7 @@ func TestPubKeyValidityProof_MarshalUnmarshalJSON(t *testing.T) {
 }
 
 func TestNewPubKeyValidityProof_InvalidInput(t *testing.T) {
-	privateKey, _ := elgamal.GenerateKey()
+	privateKey, _ := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
@@ -67,7 +68,7 @@ func TestNewPubKeyValidityProof_InvalidInput(t *testing.T) {
 }
 
 func TestVerifyPubKeyValidityProof_InvalidInput(t *testing.T) {
-	privateKey, err := elgamal.GenerateKey()
+	privateKey, err := testutils.GenerateKey()
 	require.Nil(t, err)
 
 	eg := elgamal.NewTwistedElgamal()

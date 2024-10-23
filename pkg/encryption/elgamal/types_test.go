@@ -2,12 +2,13 @@ package elgamal
 
 import (
 	"encoding/json"
+	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
 func TestCiphertext_MarshalJSON(t *testing.T) {
-	privateKey, _ := GenerateKey()
+	privateKey, _ := testutils.GenerateKey()
 	eg := NewTwistedElgamal()
 
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)

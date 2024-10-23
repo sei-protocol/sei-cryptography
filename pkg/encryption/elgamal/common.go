@@ -2,9 +2,7 @@ package elgamal
 
 import (
 	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/sha256"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"io"
 
 	"github.com/coinbase/kryptology/pkg/core/curves"
@@ -13,11 +11,6 @@ import (
 
 // H_STRING H is a random point on the elliptic curve that is unrelated to G.
 const H_STRING = "gPt25pi0eDphSiXWu0BIeIvyVATCtwhslTqfqvNhW2c"
-
-// GenerateKey generates a new ECDSA key pair.
-func GenerateKey() (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
-}
 
 // KeyGen generates a new key pair for the Twisted ElGamal encryption scheme.
 func (teg TwistedElGamal) KeyGen(privateKey ecdsa.PrivateKey, denom string) (*KeyPair, error) {
