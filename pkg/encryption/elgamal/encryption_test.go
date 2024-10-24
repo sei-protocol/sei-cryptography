@@ -1,10 +1,9 @@
 package elgamal
 
 import (
-	"crypto/ecdsa"
 	"crypto/rand"
 	"github.com/coinbase/kryptology/pkg/core/curves"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
 	"math"
 	"testing"
@@ -12,12 +11,8 @@ import (
 
 const DefaultTestDenom = "factory/sei1239081236472sd/testToken"
 
-func generateKey() (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
-}
-
 func TestKeyGeneration(t *testing.T) {
-	privateKey, err := generateKey()
+	privateKey, err := testutils.GenerateKey()
 	require.Nil(t, err)
 
 	eg := NewTwistedElgamal()
@@ -42,7 +37,7 @@ func TestKeyGeneration(t *testing.T) {
 	require.NotEqual(t, keyPair, keyPairDiffSalt, "PK should be different for different salt")
 
 	// Test that different privateKey should generate different PK
-	altPrivateKey, err := generateKey()
+	altPrivateKey, err := testutils.GenerateKey()
 	require.Nil(t, err)
 	keyPairDiffPK, err := eg.KeyGen(*altPrivateKey, altDenom)
 	require.Nil(t, err)
@@ -50,8 +45,8 @@ func TestKeyGeneration(t *testing.T) {
 }
 
 func TestEncryptionDecryption(t *testing.T) {
-	privateKey, _ := generateKey()
-	altPrivateKey, _ := generateKey()
+	privateKey, _ := testutils.GenerateKey()
+	altPrivateKey, _ := testutils.GenerateKey()
 
 	eg := NewTwistedElgamal()
 
@@ -86,7 +81,7 @@ func TestEncryptionDecryption(t *testing.T) {
 
 // Due to the size of 48 bit numbers, this test takes a really long time (~1hr) to run.
 func Test48BitEncryptionDecryption(t *testing.T) {
-	privateKey, err := generateKey()
+	privateKey, err := testutils.GenerateKey()
 	require.Nil(t, err)
 
 	eg := NewTwistedElgamal()
@@ -127,8 +122,8 @@ func Test48BitEncryptionDecryption(t *testing.T) {
 }
 
 func TestAddCiphertext(t *testing.T) {
-	privateKey, _ := generateKey()
-	altPrivateKey, _ := generateKey()
+	privateKey, _ := testutils.GenerateKey()
+	altPrivateKey, _ := testutils.GenerateKey()
 
 	eg := NewTwistedElgamal()
 
@@ -175,7 +170,7 @@ func TestAddCiphertext(t *testing.T) {
 
 func TestTwistedElGamal_InvalidCiphertext(t *testing.T) {
 	eg := NewTwistedElgamal()
-	privateKey, _ := generateKey()
+	privateKey, _ := testutils.GenerateKey()
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	invalidCt := &Ciphertext{}
@@ -190,7 +185,7 @@ func TestTwistedElGamal_NilPrivateKey(t *testing.T) {
 	eg := NewTwistedElgamal()
 
 	// Generate a valid key pair for comparison
-	privateKey, _ := generateKey()
+	privateKey, _ := testutils.GenerateKey()
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	// Encrypt a value with a valid public key
@@ -209,7 +204,7 @@ func TestTwistedElGamal_EncryptDecryptWithRand(t *testing.T) {
 	eg := NewTwistedElgamal()
 
 	// Generate a valid key pair for comparison
-	privateKey, _ := generateKey()
+	privateKey, _ := testutils.GenerateKey()
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	message := uint64(555555555)
@@ -227,7 +222,7 @@ func TestTwistedElGamal_EncryptMessageTwice(t *testing.T) {
 	eg := NewTwistedElgamal()
 
 	// Generate a valid key pair for comparison
-	privateKey, _ := generateKey()
+	privateKey, _ := testutils.GenerateKey()
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	message := uint64(555555555)
@@ -243,7 +238,7 @@ func TestTwistedElGamal_DecryptWithZeroBits(t *testing.T) {
 	eg := NewTwistedElgamal()
 
 	// Generate a valid key pair for comparison
-	privateKey, _ := generateKey()
+	privateKey, _ := testutils.GenerateKey()
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	message := uint64(555555555)
@@ -269,7 +264,7 @@ func TestTwistedElGamal_EncryptInvalidRandomFactor(t *testing.T) {
 	eg := NewTwistedElgamal()
 
 	// Generate a valid key pair for comparison
-	privateKey, _ := generateKey()
+	privateKey, _ := testutils.GenerateKey()
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	// Test with nil public key
@@ -282,7 +277,7 @@ func TestTwistedElGamal_EncryptBoundaryValues(t *testing.T) {
 	eg := NewTwistedElgamal()
 
 	// Generate a valid key pair for comparison
-	privateKey, _ := generateKey()
+	privateKey, _ := testutils.GenerateKey()
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	// Test with the smallest possible value (0)
