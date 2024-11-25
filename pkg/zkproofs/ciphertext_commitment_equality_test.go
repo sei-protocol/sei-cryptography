@@ -3,19 +3,20 @@ package zkproofs
 import (
 	"crypto/rand"
 	"encoding/json"
+	"math/big"
+	"testing"
+
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"math/big"
-	"testing"
 )
 
 func TestCiphertextCommitmentEqualityProof(t *testing.T) {
 	tests := []struct {
 		name                          string
-		sourceAmount                  uint64
+		sourceAmount                  *big.Int
 		alternativePedersenCommitment bool
 		incorrectPedersenOpening      bool
 		incorrectAmount               bool
@@ -23,26 +24,26 @@ func TestCiphertextCommitmentEqualityProof(t *testing.T) {
 	}{
 		{
 			name:                          "Valid Proof - Equal Amounts and Commitments",
-			sourceAmount:                  100,
+			sourceAmount:                  big.NewInt(100),
 			alternativePedersenCommitment: false,
 			expectValid:                   true,
 		},
 		{
 			name:                          "Valid Proof - Equal Amounts and Alternative Commitments",
-			sourceAmount:                  100,
+			sourceAmount:                  big.NewInt(100),
 			alternativePedersenCommitment: true,
 			expectValid:                   true,
 		},
 		{
 			name:                          "Invalid Proof - Different Pedersen Opening",
-			sourceAmount:                  200,
+			sourceAmount:                  big.NewInt(200),
 			alternativePedersenCommitment: false,
 			incorrectPedersenOpening:      true,
 			expectValid:                   false,
 		},
 		{
 			name:                          "Invalid Proof - Incorrect Amount in Pedersen Commitment",
-			sourceAmount:                  200,
+			sourceAmount:                  big.NewInt(200),
 			alternativePedersenCommitment: true,
 			incorrectPedersenOpening:      false,
 			incorrectAmount:               true,
@@ -61,14 +62,13 @@ func TestCiphertextCommitmentEqualityProof(t *testing.T) {
 			sourceCiphertext, sourceRandomness, err := eg.Encrypt(sourceKeypair.PublicKey, tt.sourceAmount)
 			assert.NoError(t, err, "Encryption should succeed for sourceCiphertext")
 
-			var amountToSet uint64
+			amountToSet := new(big.Int)
 			if tt.incorrectAmount {
-				amountToSet = tt.sourceAmount + 1
+				amountToSet = amountToSet.Add(tt.sourceAmount, big.NewInt(1))
 			} else {
 				amountToSet = tt.sourceAmount
 			}
-			scalarAmtValue := new(big.Int).SetUint64(amountToSet)
-			scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+			scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(amountToSet)
 
 			pedersenCommitment := sourceCiphertext.C
 
@@ -125,13 +125,12 @@ func TestCiphertextCommitmentEqualityProof_MarshalUnmarshalJSON(t *testing.T) {
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
-	amount := uint64(232436)
+	amount := big.NewInt(232436)
 	// Encrypt the source amount
 	sourceCiphertext, sourceRandomness, err := eg.Encrypt(sourceKeypair.PublicKey, amount)
 	assert.NoError(t, err, "Encryption should succeed for sourceCiphertext")
 
-	scalarAmtValue := new(big.Int).SetUint64(amount)
-	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(amount)
 
 	// Create a sample CiphertextCommitmentEqualityProof
 	proof, err := NewCiphertextCommitmentEqualityProof(
@@ -166,12 +165,11 @@ func TestNewCiphertextCommitmentEqualityProof_InvalidInput(t *testing.T) {
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
-	amount := uint64(100)
+	amount := big.NewInt(100)
 
 	// Encrypt the amount using source and destination public keys
 	sourceCiphertext, sourceRandomness, _ := eg.Encrypt(sourceKeypair.PublicKey, amount)
-	scalarAmtValue := new(big.Int).SetUint64(amount)
-	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(amount)
 
 	t.Run("Invalid Source Keypair", func(t *testing.T) {
 		// Source keypair is nil
@@ -227,12 +225,11 @@ func TestVerifyCiphertextCommitmentEquality_InvalidInput(t *testing.T) {
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
-	amount := uint64(100)
+	amount := big.NewInt(100)
 
 	// Encrypt the amount using source and destination public keys
 	sourceCiphertext, sourceRandomness, _ := eg.Encrypt(sourceKeypair.PublicKey, amount)
-	scalarAmtValue := new(big.Int).SetUint64(amount)
-	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(amount)
 
 	// Generate the proof
 	proof, _ := NewCiphertextCommitmentEqualityProof(

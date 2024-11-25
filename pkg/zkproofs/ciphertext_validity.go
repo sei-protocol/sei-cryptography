@@ -4,9 +4,10 @@ import (
 	crand "crypto/rand"
 	"encoding/json"
 	"errors"
+	"math/big"
+
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
-	"math/big"
 )
 
 // CiphertextValidityProof represents a zero-knowledge proof that a ciphertext is valid.
@@ -23,7 +24,7 @@ type CiphertextValidityProof struct {
 // - pubKey: The public key used in the encryption.
 // - ciphertext: The ciphertext to prove the validity of.
 // - message: The message that was encrypted in the ciphertext.
-func NewCiphertextValidityProof(pedersenOpening *curves.Scalar, pubKey curves.Point, ciphertext *elgamal.Ciphertext, message uint64) (*CiphertextValidityProof, error) {
+func NewCiphertextValidityProof(pedersenOpening *curves.Scalar, pubKey curves.Point, ciphertext *elgamal.Ciphertext, message *big.Int) (*CiphertextValidityProof, error) {
 	// Validate input
 	if pedersenOpening == nil {
 		return nil, errors.New("invalid randomness factor")
@@ -44,8 +45,7 @@ func NewCiphertextValidityProof(pedersenOpening *curves.Scalar, pubKey curves.Po
 
 	ed25519 := curves.ED25519()
 	// Convert message to a scalar
-	messageValue := new(big.Int).SetUint64(message)
-	x, _ := ed25519.Scalar.SetBigInt(messageValue)
+	x, _ := ed25519.Scalar.SetBigInt(message)
 
 	// Step 1: Generate random blinding factors for the proof
 	rBlind := ed25519.Scalar.Random(crand.Reader) // Blinding factor for random value r

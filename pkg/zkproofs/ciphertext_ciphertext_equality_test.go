@@ -2,13 +2,14 @@ package zkproofs
 
 import (
 	"encoding/json"
+	"math/big"
+	"testing"
+
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"math/big"
-	"testing"
 )
 
 const TestDenom = "factory/sei15zv4wz8kpa4jz5ahretje97u5xsp9vttvyaffd/testToken"
@@ -16,36 +17,36 @@ const TestDenom = "factory/sei15zv4wz8kpa4jz5ahretje97u5xsp9vttvyaffd/testToken"
 func TestCiphertextCiphertextEqualityProof(t *testing.T) {
 	tests := []struct {
 		name                  string
-		sourceAmount          uint64
-		destinationAmount     uint64
+		sourceAmount          *big.Int
+		destinationAmount     *big.Int
 		useDifferentPublicKey bool
 		expectValid           bool
 	}{
 		{
 			name:                  "Valid Proof - Equal Amounts",
-			sourceAmount:          100,
-			destinationAmount:     100,
+			sourceAmount:          big.NewInt(100),
+			destinationAmount:     big.NewInt(100),
 			useDifferentPublicKey: false,
 			expectValid:           true,
 		},
 		{
 			name:                  "Invalid Proof - Mismatched Amounts",
-			sourceAmount:          100,
-			destinationAmount:     101,
+			sourceAmount:          big.NewInt(100),
+			destinationAmount:     big.NewInt(101),
 			useDifferentPublicKey: false,
 			expectValid:           false,
 		},
 		{
 			name:                  "Invalid Proof - Wrong Dest Public Key",
-			sourceAmount:          200,
-			destinationAmount:     200,
+			sourceAmount:          big.NewInt(200),
+			destinationAmount:     big.NewInt(200),
 			useDifferentPublicKey: true,
 			expectValid:           false,
 		},
 		{
 			name:                  "Invalid Proof - Different Public Keys and Mismatched Amounts",
-			sourceAmount:          150,
-			destinationAmount:     151,
+			sourceAmount:          big.NewInt(150),
+			destinationAmount:     big.NewInt(151),
 			useDifferentPublicKey: true,
 			expectValid:           false,
 		},
@@ -78,8 +79,7 @@ func TestCiphertextCiphertextEqualityProof(t *testing.T) {
 			destinationCiphertext, destinationRandomness, err := eg.Encrypt(destinationKeypair.PublicKey, tt.destinationAmount)
 			assert.NoError(t, err, "Encryption should succeed for destinationCiphertext")
 
-			srcAmtValue := new(big.Int).SetUint64(tt.sourceAmount)
-			amount, _ := curves.ED25519().Scalar.SetBigInt(srcAmtValue)
+			amount, _ := curves.ED25519().Scalar.SetBigInt(tt.sourceAmount)
 
 			// Generate the proof
 			proof, err := NewCiphertextCiphertextEqualityProof(
@@ -118,7 +118,7 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 		sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 		destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
 
-		amount := uint64(0)
+		amount := big.NewInt(0)
 
 		// Encrypt the amount using source and destination public keys
 		sourceCiphertext, _, err := eg.Encrypt(sourceKeypair.PublicKey, amount)
@@ -127,8 +127,7 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 		destinationCiphertext, destinationRandomness, err := eg.Encrypt(destinationKeypair.PublicKey, amount)
 		assert.NoError(t, err, "Encryption should succeed for destinationCiphertext")
 
-		srcAmtValue := new(big.Int).SetUint64(amount)
-		scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(srcAmtValue)
+		scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(amount)
 
 		// Generate the proof
 		proof, err := NewCiphertextCiphertextEqualityProof(
@@ -160,7 +159,7 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 
 		destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
 
-		amount := uint64(1 << 60) // A large amount to test scalability
+		amount := big.NewInt(1 << 60) // A large amount to test scalability
 
 		// Encrypt the amount using source and destination public keys
 		sourceCiphertext, _, err := eg.Encrypt(sourceKeypair.PublicKey, amount)
@@ -170,8 +169,7 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 		assert.NoError(t, err, "Encryption should succeed for destinationCiphertext")
 
 		// Generate the proof
-		scalarAmtValue := new(big.Int).SetUint64(amount)
-		scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+		scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(amount)
 
 		// Generate the proof
 		proof, err := NewCiphertextCiphertextEqualityProof(
@@ -202,13 +200,12 @@ func TestCiphertextCiphertextEqualityProof_UnmarshalJSON_Valid(t *testing.T) {
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
 
-	amount := uint64(100)
+	amount := big.NewInt(100)
 
 	// Encrypt the amount using source and destination public keys
 	sourceCiphertext, _, _ := eg.Encrypt(sourceKeypair.PublicKey, amount)
 	_, destinationRandomness, _ := eg.Encrypt(destinationKeypair.PublicKey, amount)
-	scalarAmtValue := new(big.Int).SetUint64(amount)
-	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(amount)
 
 	proof, err := NewCiphertextCiphertextEqualityProof(
 		sourceKeypair,
@@ -250,13 +247,12 @@ func TestNewCiphertextCiphertextEqualityProof_InvalidInputs(t *testing.T) {
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
 
-	amount := uint64(100)
+	amount := big.NewInt(100)
 
 	// Encrypt the amount using source and destination public keys
 	sourceCiphertext, _, _ := eg.Encrypt(sourceKeypair.PublicKey, amount)
 	_, destinationRandomness, _ := eg.Encrypt(destinationKeypair.PublicKey, amount)
-	scalarAmtValue := new(big.Int).SetUint64(amount)
-	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(amount)
 
 	t.Run("Invalid Source Keypair", func(t *testing.T) {
 		// Source keypair is nil
@@ -333,13 +329,12 @@ func TestVerifyCiphertextCiphertextEquality_InvalidInputs(t *testing.T) {
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
 
-	amount := uint64(100)
+	amount := big.NewInt(100)
 
 	// Encrypt the amount using source and destination public keys
 	sourceCiphertext, _, _ := eg.Encrypt(sourceKeypair.PublicKey, amount)
 	_, destinationRandomness, _ := eg.Encrypt(destinationKeypair.PublicKey, amount)
-	scalarAmtValue := new(big.Int).SetUint64(amount)
-	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(scalarAmtValue)
+	scalarAmount, _ := curves.ED25519().Scalar.SetBigInt(amount)
 
 	proof, _ := NewCiphertextCiphertextEqualityProof(
 		sourceKeypair,

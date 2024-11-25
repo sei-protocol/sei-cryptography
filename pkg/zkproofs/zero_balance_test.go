@@ -3,35 +3,37 @@ package zkproofs
 import (
 	"crypto/rand"
 	"encoding/json"
+	"math/big"
+	"testing"
+
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestZeroBalanceProof(t *testing.T) {
 	tests := []struct {
 		name               string
-		encryptAmount      uint64
+		encryptAmount      *big.Int
 		useDifferentPubKey bool
 		expectValid        bool
 	}{
 		{
 			name:               "Valid Proof - Correct Encryption and Commitment",
-			encryptAmount:      0,
+			encryptAmount:      big.NewInt(0),
 			useDifferentPubKey: false,
 			expectValid:        true,
 		},
 		{
 			name:               "Invalid Proof - Non-Zero Value",
-			encryptAmount:      10000,
+			encryptAmount:      big.NewInt(10000),
 			useDifferentPubKey: false,
 			expectValid:        false,
 		},
 		{
 			name:               "Invalid Proof - Different Public Key",
-			encryptAmount:      0,
+			encryptAmount:      big.NewInt(0),
 			useDifferentPubKey: true,
 			expectValid:        false,
 		},
@@ -78,7 +80,7 @@ func TestZeroBalanceProof_MarshalUnmarshalJSON(t *testing.T) {
 	eg := elgamal.NewTwistedElgamal()
 	keypair, _ := eg.KeyGen(*privateKey, TestDenom)
 
-	ciphertext, _, _ := eg.Encrypt(keypair.PublicKey, 0)
+	ciphertext, _, _ := eg.Encrypt(keypair.PublicKey, big.NewInt(0))
 	original, err := NewZeroBalanceProof(keypair, ciphertext)
 	require.NoError(t, err, "Proof generation should not produce an error")
 
@@ -105,7 +107,7 @@ func TestZeroBalanceProof_InvalidRandomness(t *testing.T) {
 	keypair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.NoError(t, err, "Failed to generate key pair")
 
-	ciphertext, _, err := eg.Encrypt(keypair.PublicKey, 0)
+	ciphertext, _, err := eg.Encrypt(keypair.PublicKey, big.NewInt(0))
 	require.NoError(t, err, "Failed to encrypt amount")
 
 	curve := curves.ED25519()
@@ -132,7 +134,7 @@ func TestZeroBalanceProof_ExtremelyLargeScalars(t *testing.T) {
 	keypair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.NoError(t, err, "Failed to generate key pair")
 
-	ciphertext, _, err := eg.Encrypt(keypair.PublicKey, 0)
+	ciphertext, _, err := eg.Encrypt(keypair.PublicKey, big.NewInt(0))
 	require.NoError(t, err, "Failed to encrypt amount")
 
 	// Manually set Z to an extremely large scalar
@@ -162,7 +164,7 @@ func TestZeroBalanceProof_TamperedProof(t *testing.T) {
 	keypair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.NoError(t, err, "Failed to generate key pair")
 
-	ciphertext, _, err := eg.Encrypt(keypair.PublicKey, 0)
+	ciphertext, _, err := eg.Encrypt(keypair.PublicKey, big.NewInt(0))
 	require.NoError(t, err, "Failed to encrypt amount")
 
 	// Generate ZeroBalanceProof
@@ -236,7 +238,7 @@ func TestVerifyZeroProof_InvalidInput(t *testing.T) {
 	keypair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.NoError(t, err, "Failed to generate key pair")
 
-	ciphertext, _, err := eg.Encrypt(keypair.PublicKey, 0)
+	ciphertext, _, err := eg.Encrypt(keypair.PublicKey, big.NewInt(0))
 	require.NoError(t, err, "Failed to encrypt amount")
 
 	proof, err := NewZeroBalanceProof(keypair, ciphertext)

@@ -2,10 +2,12 @@ package zkproofs
 
 import (
 	"encoding/json"
+	"math/big"
+	"testing"
+
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestValidityProof(t *testing.T) {
@@ -16,7 +18,7 @@ func TestValidityProof(t *testing.T) {
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 	altKeys, _ := eg.KeyGen(*altPrivateKey, TestDenom)
 
-	message12 := uint64(12)
+	message12 := big.NewInt(12)
 	ciphertext12, randomness12, err := eg.Encrypt(keys.PublicKey, message12)
 	require.Nil(t, err)
 
@@ -30,7 +32,7 @@ func TestValidityProof(t *testing.T) {
 	require.False(t, validated, "Validating with the wrong PublicKey should validate as false")
 
 	// Encrypt a message (e.g., x = 42)
-	message42 := uint64(42)
+	message42 := big.NewInt(42)
 	ciphertext42, randomness42, _ := eg.Encrypt(keys.PublicKey, message42)
 
 	validated = VerifyCiphertextValidity(proof12, altKeys.PublicKey, ciphertext42)
@@ -64,7 +66,7 @@ func TestCiphertextValidityProof_MarshalUnmarshalJSON(t *testing.T) {
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
-	message12 := uint64(12)
+	message12 := big.NewInt(12)
 	ciphertext12, randomness12, _ := eg.Encrypt(keys.PublicKey, message12)
 
 	original, err := NewCiphertextValidityProof(&randomness12, keys.PublicKey, ciphertext12, message12)
@@ -90,7 +92,7 @@ func TestNewCiphertextValidityProof_InvalidInput(t *testing.T) {
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
-	amount := uint64(100)
+	amount := big.NewInt(100)
 	// Encrypt the amount using source and destination public keys
 	ciphertext, randomness, _ := eg.Encrypt(keys.PublicKey, amount)
 
@@ -136,7 +138,7 @@ func TestVerifyCiphertextValidityProof_Invalid_Input(t *testing.T) {
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
-	amount := uint64(100)
+	amount := big.NewInt(100)
 	// Encrypt the amount using source and destination public keys
 	ciphertext, randomness, _ := eg.Encrypt(keys.PublicKey, amount)
 
