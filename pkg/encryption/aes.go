@@ -7,10 +7,12 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/binary"
+	"errors"
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"io"
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 
 	"golang.org/x/crypto/hkdf"
 )
@@ -49,8 +51,14 @@ func GetAESKey(privKey ecdsa.PrivateKey, denom string) ([]byte, error) {
 	return aesKey, nil
 }
 
-// EncryptAESGCM Key must be a len 32 byte array for AES-256
-func EncryptAESGCM(value uint64, key []byte) (string, error) {
+// EncryptAESGCM encrypts a big.Int value using AES-GCM with a 32-byte key.
+// Key must be a len 32 byte array for AES-256
+func EncryptAESGCM(value *big.Int, key []byte) (string, error) {
+	// Validate the key length
+	if len(key) != 32 {
+		return "", errors.New("key must be 32 bytes for AES-256")
+	}
+
 	// Create a GCM cipher mode instance
 	aesgcm, err := getCipher(key)
 	if err != nil {
@@ -63,45 +71,45 @@ func EncryptAESGCM(value uint64, key []byte) (string, error) {
 		return "", err
 	}
 
-	plaintext := make([]byte, 8)
-	// Convert the integer to []byte using BigEndian or LittleEndian
-	binary.BigEndian.PutUint64(plaintext, value)
+	// Serialize the big.Int value as a big-endian byte array
+	valueBytes := value.Bytes()
 
 	// Encrypt the data
-	ciphertext := aesgcm.Seal(nonce, nonce, plaintext, nil)
+	ciphertext := aesgcm.Seal(nonce, nonce, valueBytes, nil)
 
 	// Encode to Base64 for storage or transmission
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
 // DecryptAESGCM Key must be a len 32 byte array for AES-256
-func DecryptAESGCM(ciphertextBase64 string, key []byte) (uint64, error) {
+func DecryptAESGCM(ciphertextBase64 string, key []byte) (*big.Int, error) {
 	// Decode the Base64-encoded ciphertext
 	ciphertext, err := base64.StdEncoding.DecodeString(ciphertextBase64)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	// Create a GCM cipher mode instance
 	aesgcm, err := getCipher(key)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	// Extract the nonce
 	nonceSize := aesgcm.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return 0, fmt.Errorf("ciphertext too short")
+		return nil, fmt.Errorf("ciphertext too short")
 	}
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 
 	// Decrypt the data
 	plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	value := binary.BigEndian.Uint64(plaintext)
+	// Convert the plaintext (byte array) to a big.Int
+	value := new(big.Int).SetBytes(plaintext)
 
 	return value, nil
 }

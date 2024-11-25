@@ -9,11 +9,10 @@ import (
 // For some Ciphertext that encodes x, (C = rH + xG, D = rP), we can just add amount*G to C.
 // The new Ciphertext C' will encode C' = rH + xG + amountG = rH + (x+amount)G.
 // We do not need to touch D, since the randomness has not changed.
-func (teg TwistedElGamal) AddScalar(ciphertext *Ciphertext, amount uint64) (*Ciphertext, error) {
+func (teg TwistedElGamal) AddScalar(ciphertext *Ciphertext, amount *big.Int) (*Ciphertext, error) {
 	G := teg.GetG()
 	// Create a scalar from the amount.
-	bigIntAmount := new(big.Int).SetUint64(amount)
-	scalarAmount, err := teg.curve.Scalar.SetBigInt(bigIntAmount)
+	scalarAmount, err := teg.curve.Scalar.SetBigInt(amount)
 	if err != nil {
 		return nil, err
 	}
@@ -32,11 +31,10 @@ func (teg TwistedElGamal) AddScalar(ciphertext *Ciphertext, amount uint64) (*Cip
 // For some Ciphertext that encodes x, (C = rH + xG, D = rP), we can just sub amount*G to C.
 // The new Ciphertext C' will encode C' = rH + xG - amountG = rH + (x-amount)G.
 // We do not need to touch D, since the randomness has not changed.
-func (teg TwistedElGamal) SubScalar(ciphertext *Ciphertext, amount uint64) (*Ciphertext, error) {
+func (teg TwistedElGamal) SubScalar(ciphertext *Ciphertext, amount *big.Int) (*Ciphertext, error) {
 	G := teg.GetG()
 	// Create a scalar from the amount.
-	bigIntAmount := new(big.Int).SetUint64(amount)
-	scalarAmount, err := teg.curve.Scalar.SetBigInt(bigIntAmount)
+	scalarAmount, err := teg.curve.Scalar.SetBigInt(amount)
 	if err != nil {
 		return nil, err
 	}
@@ -80,9 +78,8 @@ func SubtractCiphertext(ct1 *Ciphertext, ct2 *Ciphertext) (*Ciphertext, error) {
 }
 
 // ScalarMultCiphertext Multiply takes a ciphertext ct and returns the ciphertext of their ct * factor.
-func (teg TwistedElGamal) ScalarMultCiphertext(ct *Ciphertext, factor uint64) (*Ciphertext, error) {
-	scalarValue := new(big.Int).SetUint64(factor)
-	factorScalar, _ := teg.curve.Scalar.SetBigInt(scalarValue)
+func (teg TwistedElGamal) ScalarMultCiphertext(ct *Ciphertext, factor *big.Int) (*Ciphertext, error) {
+	factorScalar, _ := teg.curve.Scalar.SetBigInt(factor)
 
 	// Cmul = C * Factor
 	cMul := ct.C.Mul(factorScalar)
@@ -101,10 +98,10 @@ func (teg TwistedElGamal) ScalarMultCiphertext(ct *Ciphertext, factor uint64) (*
 // AddWithLoHi performs the operation: left_ciphertext + (right_ciphertext_lo + 2^16 * right_ciphertext_hi)
 func (teg TwistedElGamal) AddWithLoHi(leftCiphertext, rightCiphertextLo, rightCiphertextHi *Ciphertext) (*Ciphertext, error) {
 	// Step 1: Define shift_scalar as 2^16 (which is 65536)
-	shiftScalar := 1 << 16
+	shiftScalar := big.NewInt(1 << 16)
 
 	// Step 2: Shift rightCiphertextHi by multiplying by shift_scalar
-	shiftedRightCiphertextHi, err := teg.ScalarMultCiphertext(rightCiphertextHi, uint64(shiftScalar))
+	shiftedRightCiphertextHi, err := teg.ScalarMultCiphertext(rightCiphertextHi, shiftScalar)
 	if err != nil {
 		return nil, fmt.Errorf("failed to shift rightCiphertextHi: %v", err)
 	}
@@ -128,10 +125,10 @@ func (teg TwistedElGamal) AddWithLoHi(leftCiphertext, rightCiphertextLo, rightCi
 // SubWithLoHi performs the operation: left_ciphertext - (right_ciphertext_lo + 2^16 * right_ciphertext_hi)
 func (teg TwistedElGamal) SubWithLoHi(leftCiphertext, rightCiphertextLo, rightCiphertextHi *Ciphertext) (*Ciphertext, error) {
 	// Step 1: Define shift_scalar as 2^16 (which is 65536)
-	shiftScalar := 1 << 16
+	shiftScalar := big.NewInt(1 << 16)
 
 	// Step 2: Shift rightCiphertextHi by multiplying by shift_scalar
-	shiftedRightCiphertextHi, err := teg.ScalarMultCiphertext(rightCiphertextHi, uint64(shiftScalar))
+	shiftedRightCiphertextHi, err := teg.ScalarMultCiphertext(rightCiphertextHi, shiftScalar)
 	if err != nil {
 		return nil, fmt.Errorf("failed to shift rightCiphertextHi: %v", err)
 	}

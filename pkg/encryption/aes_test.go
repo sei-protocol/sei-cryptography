@@ -2,9 +2,15 @@ package encryption
 
 import (
 	"crypto/ecdsa"
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	TestDenom = "factory/sei1239081236470/testToken"
+	TestKey   = "examplekey12345678901234567890ab"
 )
 
 func TestGetAESKey(t *testing.T) {
@@ -19,27 +25,27 @@ func TestGetAESKey(t *testing.T) {
 		{
 			name:        "Deterministic Key Generation",
 			privateKey:  generateTestKey(t),
-			denom:       "factory/sei1239081236470/testToken",
+			denom:       TestDenom,
 			expectEqual: true,
 		},
 		{
 			name:         "Different Denom (Salt) Generates Different Key",
 			privateKey:   generateTestKey(t),
-			denom:        "factory/sei1239081236470/testToken",
-			anotherDenom: "factory/sei1239081236470/testToken1",
+			denom:        TestDenom,
+			anotherDenom: TestDenom + "1",
 			expectEqual:  false,
 		},
 		{
 			name:         "Different Denom (Salt) of same length Generates Different Key",
 			privateKey:   generateTestKey(t),
-			denom:        "factory/sei1239081236470/testToken1",
-			anotherDenom: "factory/sei1239081236470/testToken2",
+			denom:        TestDenom + "1",
+			anotherDenom: TestDenom + "2",
 			expectEqual:  false,
 		},
 		{
 			name:        "Different PrivateKey Generates Different Key",
 			privateKey:  generateTestKey(t),
-			denom:       "factory/sei1239081236470/testTokenN",
+			denom:       TestDenom + "N",
 			anotherKey:  generateTestKey(t),
 			expectEqual: false,
 		},
@@ -74,11 +80,11 @@ func TestGetAESKey(t *testing.T) {
 
 func TestGetAESKey_InvalidInput(t *testing.T) {
 	// Nil private key
-	_, err := GetAESKey(*new(ecdsa.PrivateKey), "valid/denom")
+	_, err := GetAESKey(*new(ecdsa.PrivateKey), TestDenom)
 	require.Error(t, err, "Should return error for nil private key")
 
 	invalidPrivateKey := &ecdsa.PrivateKey{ /* Invalid key data */ }
-	_, err = GetAESKey(*invalidPrivateKey, "valid/denom")
+	_, err = GetAESKey(*invalidPrivateKey, TestDenom)
 	require.Error(t, err, "Should return error for invalid private key")
 
 	validPrivateKey := generateTestKey(t)
@@ -91,48 +97,48 @@ func TestAESEncryptionDecryption(t *testing.T) {
 		name           string
 		key            []byte
 		anotherKey     []byte
-		value          uint64
+		value          *big.Int
 		expectError    bool
 		decryptWithKey []byte
 		encryptAgain   bool
 	}{
 		{
 			name:        "Successful Encryption and Decryption",
-			key:         []byte("examplekey12345678901234567890ab"), // 32 bytes for AES-256
-			value:       3023,
+			key:         []byte(TestKey), // 32 bytes for AES-256
+			value:       big.NewInt(3023),
 			expectError: false,
 		},
 		{
 			name:         "Encryption Yields Different Ciphertext If Encrypted Again",
-			key:          []byte("examplekey12345678901234567890ab"),
-			value:        3023,
+			key:          []byte(TestKey),
+			value:        big.NewInt(3023),
 			encryptAgain: true,
 			expectError:  false,
 		},
 		{
 			name:        "Different Key Produces Different Ciphertext",
-			key:         []byte("examplekey12345678901234567890ab"),
+			key:         []byte(TestKey),
 			anotherKey:  []byte("randomkey12345678901234567890abc"), // 32 bytes for AES-256
-			value:       3023,
+			value:       big.NewInt(3023),
 			expectError: false,
 		},
 		{
 			name:           "Decryption with Wrong Key",
-			key:            []byte("examplekey12345678901234567890ab"),
-			value:          3023,
+			key:            []byte(TestKey),
+			value:          big.NewInt(3023),
 			expectError:    true,
 			decryptWithKey: []byte("wrongkey12345678901234567890ab"),
 		},
 		{
 			name:        "Edge Case: Zero Value",
-			key:         []byte("examplekey12345678901234567890ab"),
-			value:       0,
+			key:         []byte(TestKey),
+			value:       big.NewInt(0),
 			expectError: false,
 		},
 		{
-			name:        "Edge Case: Maximum Uint64",
-			key:         []byte("examplekey12345678901234567890ab"),
-			value:       ^uint64(0),
+			name:        "Maximum Uint64",
+			key:         []byte(TestKey),
+			value:       new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil), big.NewInt(1)), // 2^256 - 1
 			expectError: false,
 		},
 	}
@@ -185,7 +191,7 @@ func TestEncryptAESGCM_InvalidKeyLength(t *testing.T) {
 		[]byte("thiskeyiswaytoolongforaesgcm"), // Too long
 	}
 
-	value := uint64(1234)
+	value := big.NewInt(1234)
 
 	for _, key := range invalidKeys {
 		t.Run("InvalidKeyLength", func(t *testing.T) {
@@ -196,7 +202,7 @@ func TestEncryptAESGCM_InvalidKeyLength(t *testing.T) {
 }
 
 func TestDecryptAESGCM_InvalidCiphertext(t *testing.T) {
-	key := []byte("examplekey12345678901234567890ab")
+	key := []byte(TestKey)
 	invalidCiphertexts := [][]byte{
 		{}, // Empty ciphertext
 		[]byte("invalidciphertext"),

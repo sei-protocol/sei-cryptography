@@ -2,11 +2,12 @@ package elgamal
 
 import (
 	"crypto/rand"
+	"math/big"
+	"testing"
+
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
-	"math"
-	"testing"
 )
 
 const DefaultTestDenom = "factory/sei1239081236472sd/testToken"
@@ -54,7 +55,7 @@ func TestEncryptionDecryption(t *testing.T) {
 	altKeys, _ := eg.KeyGen(*altPrivateKey, DefaultTestDenom)
 
 	// Happy Path
-	value := uint64(108)
+	value := big.NewInt(108)
 	ciphertext, _, err := eg.Encrypt(keys.PublicKey, value)
 	require.Nil(t, err, "Should have no error while encrypting")
 
@@ -71,8 +72,9 @@ func TestEncryptionDecryption(t *testing.T) {
 	require.Zero(t, decryptedWrongly)
 	require.Error(t, err, "Should be unable to decrypt using the wrong private key")
 
-	// Test overflow behavior
-	ciphertextOverflow, _, err := eg.Encrypt(keys.PublicKey, math.MaxUint64)
+	// Test large number behavior
+	largeNumber := new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil), big.NewInt(1)) // 2^256 - 1
+	ciphertextOverflow, _, err := eg.Encrypt(keys.PublicKey, largeNumber)
 	require.Nil(t, err, "Should have no error while encrypting")
 	decryptedOverflow, err := eg.Decrypt(keys.PrivateKey, ciphertextOverflow, MaxBits32)
 	require.Zero(t, decryptedOverflow)
@@ -88,7 +90,7 @@ func Test48BitEncryptionDecryption(t *testing.T) {
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	// First decrypt a 32 bit number (sets up the decryptor for a later test)
-	value := uint64(108092)
+	value := big.NewInt(108092)
 	ciphertext, _, err := eg.Encrypt(keys.PublicKey, value)
 	require.Nil(t, err, "Should have no error while encrypting")
 
@@ -97,7 +99,7 @@ func Test48BitEncryptionDecryption(t *testing.T) {
 	require.Equal(t, value, decrypted, "Should have the same value")
 
 	// Create a large <48 bit number to be encrypted.
-	largeValue := uint64(1 << 39)
+	largeValue := big.NewInt(1 << 39)
 	largeCiphertext, _, err := eg.Encrypt(keys.PublicKey, largeValue)
 	require.Nil(t, err, "Should have no error while encrypting")
 
@@ -131,12 +133,12 @@ func TestAddCiphertext(t *testing.T) {
 	altKeys, _ := eg.KeyGen(*altPrivateKey, DefaultTestDenom)
 
 	// Happy Path
-	value1 := uint64(30842)
+	value1 := big.NewInt(30842)
 	ciphertext1, _, err := eg.Encrypt(keys.PublicKey, value1)
 	require.Nil(t, err, "Should have no error while encrypting")
 
-	value2 := uint64(1901)
-	ciphertext2, _, err := eg.Encrypt(keys.PublicKey, uint64(value2))
+	value2 := big.NewInt(1901)
+	ciphertext2, _, err := eg.Encrypt(keys.PublicKey, value2)
 	require.Nil(t, err, "Should have no error while encrypting")
 
 	ciphertextSum, err := AddCiphertext(ciphertext1, ciphertext2)
@@ -145,7 +147,7 @@ func TestAddCiphertext(t *testing.T) {
 	decrypted, err := eg.Decrypt(keys.PrivateKey, ciphertextSum, MaxBits32)
 	require.Nil(t, err, "Should have no error while decrypting")
 	require.NotNil(t, decrypted)
-	require.Equal(t, value1+value2, decrypted, "Decrypted sum should be correct")
+	require.Equal(t, new(big.Int).Add(value1, value2), decrypted, "Decrypted sum should be correct")
 
 	// Test that the add operation is commutative by adding in the other order.
 	ciphertextSumInv, err := AddCiphertext(ciphertext2, ciphertext1)
@@ -153,7 +155,7 @@ func TestAddCiphertext(t *testing.T) {
 	require.Equal(t, ciphertextSum, ciphertextSumInv, "Summation is a deterministic operation. Both ciphertexts should be the same")
 
 	// Test addition of 2 ciphertexts encoded with different public keys.
-	ciphertext2alt, _, err := eg.Encrypt(altKeys.PublicKey, uint64(value2))
+	ciphertext2alt, _, err := eg.Encrypt(altKeys.PublicKey, value2)
 	require.Nil(t, err, "Should have no error while encrypting")
 
 	// Even though ciphertexts were encoded using different keys, addition doesn't throw an error.
@@ -189,7 +191,7 @@ func TestTwistedElGamal_NilPrivateKey(t *testing.T) {
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	// Encrypt a value with a valid public key
-	value := uint64(12345)
+	value := big.NewInt(12345)
 	ciphertext, _, err := eg.Encrypt(keys.PublicKey, value)
 	require.Nil(t, err, "Encryption should not fail with a valid public key")
 
@@ -207,7 +209,7 @@ func TestTwistedElGamal_EncryptDecryptWithRand(t *testing.T) {
 	privateKey, _ := testutils.GenerateKey()
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
-	message := uint64(555555555)
+	message := big.NewInt(555555555)
 	randomFactor := curves.ED25519().Scalar.Random(rand.Reader)
 	ct, _, err := eg.encryptWithRand(keys.PublicKey, message, randomFactor)
 	require.NoError(t, err, "Encryption with randomFactor should not fail")
@@ -225,7 +227,7 @@ func TestTwistedElGamal_EncryptMessageTwice(t *testing.T) {
 	privateKey, _ := testutils.GenerateKey()
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
-	message := uint64(555555555)
+	message := big.NewInt(555555555)
 	randomFactor := curve.Scalar.Random(rand.Reader)
 	ct1, _, _ := eg.encryptWithRand(keys.PublicKey, message, randomFactor)
 	ct2, _, _ := eg.encryptWithRand(keys.PublicKey, message, randomFactor)
@@ -241,7 +243,7 @@ func TestTwistedElGamal_DecryptWithZeroBits(t *testing.T) {
 	privateKey, _ := testutils.GenerateKey()
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
-	message := uint64(555555555)
+	message := big.NewInt(555555555)
 	randomFactor := curve.Scalar.Random(rand.Reader)
 	ct, _, err := eg.encryptWithRand(keys.PublicKey, message, randomFactor)
 	require.NoError(t, err, "Encryption with randomFactor should not fail")
@@ -255,7 +257,7 @@ func TestTwistedElGamal_EncryptInvalidKey(t *testing.T) {
 	eg := NewTwistedElgamal()
 
 	// Test with nil public key
-	_, _, err := eg.Encrypt(nil, 12345)
+	_, _, err := eg.Encrypt(nil, big.NewInt(12345))
 	require.Error(t, err, "Encryption should fail with a nil public key")
 	require.Equal(t, "invalid public key", err.Error())
 }
@@ -268,7 +270,7 @@ func TestTwistedElGamal_EncryptInvalidRandomFactor(t *testing.T) {
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	// Test with nil public key
-	_, _, err := eg.encryptWithRand(keys.PublicKey, uint64(12345), nil)
+	_, _, err := eg.encryptWithRand(keys.PublicKey, big.NewInt(12345), nil)
 	require.Error(t, err, "Encryption should fail with nil random factor")
 	require.Equal(t, "invalid random factor", err.Error())
 }
@@ -281,10 +283,11 @@ func TestTwistedElGamal_EncryptBoundaryValues(t *testing.T) {
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
 	// Test with the smallest possible value (0)
-	_, _, err := eg.Encrypt(keys.PublicKey, 0)
+	_, _, err := eg.Encrypt(keys.PublicKey, big.NewInt(0))
 	require.NoError(t, err, "Encryption should not fail with the smallest possible value")
 
-	// Test with the largest possible value (MaxUint64)
-	_, _, err = eg.Encrypt(keys.PublicKey, math.MaxUint64)
+	// Test with the largest possible value
+	largeNumber := new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil).Sub(new(big.Int).Exp(big.NewInt(2), big.NewInt(256), nil), big.NewInt(1)) // 2^256 - 1
+	_, _, err = eg.Encrypt(keys.PublicKey, largeNumber)
 	require.NoError(t, err, "Encryption should not fail with the largest possible value")
 }

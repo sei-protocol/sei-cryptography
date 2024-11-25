@@ -3,20 +3,22 @@ package zkproofs
 import (
 	crand "crypto/rand"
 	"encoding/json"
+	"math/big"
+	"testing"
+
 	"github.com/coinbase/kryptology/pkg/bulletproof"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/gtank/merlin"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 // Coinbase Kryptology's bulletproof package is used to generate range proofs
 func TestValueIsInRange(t *testing.T) {
 	curve := curves.ED25519()
-	value := 100
-	v := curve.Scalar.New(value)
+	value := big.NewInt(100)
+	v, _ := curve.Scalar.SetBigInt(value)
 	n := 64 // the range is [0, 2^64]
 
 	privateKey, err := testutils.GenerateKey()
@@ -26,7 +28,7 @@ func TestValueIsInRange(t *testing.T) {
 	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.Nil(t, err, "Error generating key pair")
 
-	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(value))
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
 
 	prover, err := bulletproof.NewRangeProver(n, []byte("rangeDomain"), []byte("ippDomain"), *curve)
 	require.NoError(t, err)
@@ -48,16 +50,17 @@ func TestValueIsInRange(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, verified)
 
-	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, uint64(101))
+	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, big.NewInt(101))
 	require.Nil(t, err)
 	verified, err = verifier.Verify(proof, ciphertext101.C, proofGenerators, n, transcriptVerifier)
 	require.Error(t, err)
 	require.False(t, verified)
 }
+
 func TestRangeAttacksAreInfeasible(t *testing.T) {
 	curve := curves.ED25519()
-	value := 100
-	v := curve.Scalar.New(value)
+	value := big.NewInt(100)
+	v, _ := curve.Scalar.SetBigInt(value)
 	n := 64 // the range is [0, 2^64]
 
 	privateKey, err := testutils.GenerateKey()
@@ -67,7 +70,7 @@ func TestRangeAttacksAreInfeasible(t *testing.T) {
 	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.Nil(t, err, "Error generating key pair")
 
-	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(value))
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
 
 	prover, err := bulletproof.NewRangeProver(n, []byte("rangeDomain"), []byte("ippDomain"), *curve)
 	require.NoError(t, err)
@@ -83,7 +86,7 @@ func TestRangeAttacksAreInfeasible(t *testing.T) {
 	// for 90 to 110 generate ciphertexts and see if we can guess the encrypted value
 	for i := 90; i < 110; i++ {
 		transcriptVerifier := merlin.NewTranscript("test")
-		ct, _, e := eg.Encrypt(keyPair.PublicKey, uint64(i))
+		ct, _, e := eg.Encrypt(keyPair.PublicKey, big.NewInt(int64(i)))
 		require.NoError(t, e)
 
 		verifier, e := bulletproof.NewRangeVerifier(n, []byte("rangeDomain"), []byte("ippDomain"), *curve)
@@ -146,7 +149,7 @@ func TestRangeVerifyNotInRangeNegativeValue(t *testing.T) {
 }
 
 func TestRangeProofs(t *testing.T) {
-	value := 100
+	value := big.NewInt(100)
 	n := 64 // the range is [0, 2^64]
 
 	privateKey, err := testutils.GenerateKey()
@@ -156,7 +159,7 @@ func TestRangeProofs(t *testing.T) {
 	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.Nil(t, err, "Error generating key pair")
 
-	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(value))
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
 
 	proof, err := NewRangeProof(n, value, gamma)
 	require.Nil(t, err)
@@ -166,7 +169,36 @@ func TestRangeProofs(t *testing.T) {
 	require.True(t, verified)
 
 	// Check that a ciphertext with a different value cannot use the same proof to verify as true, even if it meets the requirements.
-	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, uint64(101))
+	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, big.NewInt(101))
+	require.Nil(t, err)
+
+	verified, err = VerifyRangeProof(proof, ciphertext101, n)
+	require.Error(t, err)
+	require.False(t, verified)
+}
+
+func TestRangeProofsLargeN(t *testing.T) {
+	value := big.NewInt(100)
+	n := 128 // the range is [0, 2^128]
+
+	privateKey, err := testutils.GenerateKey()
+	require.Nil(t, err, "Error generating private key")
+
+	eg := elgamal.NewTwistedElgamal()
+	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	require.Nil(t, err, "Error generating key pair")
+
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
+
+	proof, err := NewRangeProof(n, value, gamma)
+	require.Nil(t, err)
+
+	verified, err := VerifyRangeProof(proof, ciphertext, n)
+	require.NoError(t, err)
+	require.True(t, verified)
+
+	// Check that a ciphertext with a different value cannot use the same proof to verify as true, even if it meets the requirements.
+	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, big.NewInt(101))
 	require.Nil(t, err)
 
 	verified, err = VerifyRangeProof(proof, ciphertext101, n)
@@ -177,7 +209,7 @@ func TestRangeProofs(t *testing.T) {
 // We test marshaling and unmarshaling of the range proof this way as bulletproof.RangeProof does not implement Equals
 // and particular fields are not exported.
 func TestRangeProofsWithMarshaling(t *testing.T) {
-	value := 100
+	value := big.NewInt(100)
 	n := 64 // the range is [0, 2^64]
 
 	privateKey, err := testutils.GenerateKey()
@@ -187,7 +219,7 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.Nil(t, err, "Error generating key pair")
 
-	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(value))
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
 
 	proof, err := NewRangeProof(n, value, gamma)
 	require.Nil(t, err)
@@ -214,12 +246,12 @@ func TestRangeProofs_InvalidInput(t *testing.T) {
 	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
 	require.Nil(t, err, "Error generating key pair")
 
-	_, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(10))
+	_, gamma, _ := eg.Encrypt(keyPair.PublicKey, big.NewInt(10))
 
 	t.Run("Invalid upper bound", func(t *testing.T) {
 		// Proof is nil
 		_, err := NewRangeProof(
-			0, 0, gamma,
+			0, big.NewInt(0), gamma,
 		)
 		require.EqualError(t, err, "range NewRangeProver: getGeneratorPoints splitPointVector: length of points must be at least one")
 	})
@@ -227,7 +259,7 @@ func TestRangeProofs_InvalidInput(t *testing.T) {
 	t.Run("Invalid randomness factor", func(t *testing.T) {
 		// Proof is nil
 		_, err := NewRangeProof(
-			1, 0, nil,
+			1, big.NewInt(0), nil,
 		)
 		require.EqualError(t, err, "invalid randomness factor")
 	})
@@ -236,10 +268,11 @@ func TestRangeProofs_InvalidInput(t *testing.T) {
 func TestVerifyRangeProof_InvalidInput(t *testing.T) {
 	privateKey, _ := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
+	value := big.NewInt(10)
 	keyPair, _ := eg.KeyGen(*privateKey, TestDenom)
-	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, uint64(10))
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
 
-	proof, err := NewRangeProof(64, 10, gamma)
+	proof, err := NewRangeProof(64, value, gamma)
 	require.NoError(t, err)
 
 	t.Run("Nil proof", func(t *testing.T) {

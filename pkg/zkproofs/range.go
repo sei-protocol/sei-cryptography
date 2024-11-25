@@ -4,6 +4,8 @@ import (
 	crand "crypto/rand"
 	"encoding/json"
 	"errors"
+	"math/big"
+
 	"github.com/coinbase/kryptology/pkg/bulletproof"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/gtank/merlin"
@@ -24,7 +26,7 @@ type RangeProof struct {
 // - upperBound The upper bound of the range we want to prove the value lies within, calculated as 2^upperBound
 // - value: The value encrypted by the ciphertext on which we are creating this proof for
 // - randomness: The randomness used in the generation of the ciphertext on which we are creating this proof for
-func NewRangeProof(upperBound, value int, randomness curves.Scalar) (*RangeProof, error) {
+func NewRangeProof(upperBound int, value *big.Int, randomness curves.Scalar) (*RangeProof, error) {
 	if randomness == nil {
 		return nil, errors.New("invalid randomness factor")
 	}
@@ -41,7 +43,11 @@ func NewRangeProof(upperBound, value int, randomness curves.Scalar) (*RangeProof
 	proofGenerators := bulletproof.NewRangeProofGenerators(g, h, u)
 	transcript := getTranscript()
 
-	vScalar := curve.Scalar.New(value)
+	vScalar, err := curve.Scalar.SetBigInt(value)
+	if err != nil {
+		return nil, err
+	}
+	
 	proof, err := prover.Prove(vScalar, randomness, upperBound, proofGenerators, transcript)
 	if err != nil {
 		return nil, err
