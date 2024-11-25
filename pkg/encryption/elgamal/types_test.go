@@ -2,9 +2,11 @@ package elgamal
 
 import (
 	"encoding/json"
+	"math/big"
+	"testing"
+
 	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestCiphertext_MarshalJSON(t *testing.T) {
@@ -13,7 +15,7 @@ func TestCiphertext_MarshalJSON(t *testing.T) {
 
 	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
 
-	value := uint64(108)
+	value := big.NewInt(108)
 	ciphertext, _, _ := eg.Encrypt(keys.PublicKey, value)
 
 	// Marshal the Ciphertext to JSON

@@ -3,9 +3,10 @@ package elgamal
 import (
 	crand "crypto/rand"
 	"fmt"
+	"math/big"
+
 	"github.com/bwesterb/go-ristretto"
 	"github.com/coinbase/kryptology/pkg/core/curves"
-	"math/big"
 )
 
 type TwistedElGamal struct {
@@ -32,7 +33,7 @@ func NewTwistedElgamal() *TwistedElGamal {
 }
 
 // Encrypt encrypts a message using the public key pk.
-func (teg TwistedElGamal) Encrypt(pk curves.Point, message uint64) (*Ciphertext, curves.Scalar, error) {
+func (teg TwistedElGamal) Encrypt(pk curves.Point, message *big.Int) (*Ciphertext, curves.Scalar, error) {
 	// Generate a random scalar r
 	randomFactor := teg.curve.Scalar.Random(crand.Reader)
 
@@ -40,7 +41,7 @@ func (teg TwistedElGamal) Encrypt(pk curves.Point, message uint64) (*Ciphertext,
 }
 
 // EncryptWithRand encrypts a message using the public key pk and a given random factor.
-func (teg TwistedElGamal) encryptWithRand(pk curves.Point, message uint64, randomFactor curves.Scalar) (*Ciphertext, curves.Scalar, error) {
+func (teg TwistedElGamal) encryptWithRand(pk curves.Point, message *big.Int, randomFactor curves.Scalar) (*Ciphertext, curves.Scalar, error) {
 	if pk == nil {
 		return nil, nil, fmt.Errorf("invalid public key")
 	}
@@ -54,8 +55,7 @@ func (teg TwistedElGamal) encryptWithRand(pk curves.Point, message uint64, rando
 	G := teg.GetG()
 
 	// Convert message x (big.Int) to a scalar on the elliptic curve
-	bigIntMessage := new(big.Int).SetUint64(message)
-	x, _ := teg.curve.Scalar.SetBigInt(bigIntMessage)
+	x, _ := teg.curve.Scalar.SetBigInt(message)
 
 	// Compute the Pedersen commitment: C = r * H + x * G
 	rH := H.Mul(randomFactor) // r * H
@@ -72,15 +72,15 @@ func (teg TwistedElGamal) encryptWithRand(pk curves.Point, message uint64, rando
 	return &ciphertext, randomFactor, nil
 }
 
-// Decrypt decrypts the ciphertext ct using the private key sk = s.
+// Decrypt decrypts the ciphertext ct using the private key sk = s. It can realistically only decrypt up to a maximum of a uint48.
 // MaxBits denotes the maximum size of the decrypted message. The lower this can be set, the faster we can decrypt the message.
-func (teg TwistedElGamal) Decrypt(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits) (uint64, error) {
+func (teg TwistedElGamal) Decrypt(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits) (*big.Int, error) {
 	if sk == nil {
-		return 0, fmt.Errorf("invalid private key")
+		return nil, fmt.Errorf("invalid private key")
 	}
 
 	if ct == nil || ct.C == nil || ct.D == nil {
-		return 0, fmt.Errorf("invalid ciphertext")
+		return nil, fmt.Errorf("invalid ciphertext")
 	}
 
 	G := teg.GetG()
@@ -122,11 +122,11 @@ func (teg TwistedElGamal) Decrypt(sk curves.Scalar, ct *Ciphertext, maxBits MaxB
 				continue
 			}
 			xComputed := xHiMultiplied + i
-			return xComputed, nil
+			return big.NewInt(int64(xComputed)), nil
 		}
 	}
 
-	return 0, fmt.Errorf("could not find x")
+	return nil, fmt.Errorf("could not find x")
 }
 
 // updateIterMap Helper function to create large maps used by the decryption funciton.
@@ -151,14 +151,14 @@ func (teg TwistedElGamal) updateIterMap(maxBits MaxBits) {
 // DecryptLargeNumber Optimistically decrypt up to a 48 bit number.
 // Since creating the map for a 48 bit number takes a large amount of time, we work our way up in hopes that we find
 // the answer before having to create the 48 bit map.
-func (teg TwistedElGamal) DecryptLargeNumber(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits) (uint64, error) {
+func (teg TwistedElGamal) DecryptLargeNumber(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits) (*big.Int, error) {
 	if maxBits > MaxBits48 {
-		return 0, fmt.Errorf("maxBits must be at most 48, provided (%d)", maxBits)
+		return nil, fmt.Errorf("maxBits must be at most 48, provided (%d)", maxBits)
 	}
 	values := []MaxBits{MaxBits16, MaxBits32, MaxBits40, MaxBits48}
 	for _, bits := range values {
 		if bits > maxBits {
-			return 0, fmt.Errorf("failed to find value")
+			return nil, fmt.Errorf("failed to find value")
 		}
 
 		res, err := teg.Decrypt(sk, ct, bits)
@@ -167,7 +167,7 @@ func (teg TwistedElGamal) DecryptLargeNumber(sk curves.Scalar, ct *Ciphertext, m
 		}
 	}
 
-	return 0, fmt.Errorf("failed to find value")
+	return nil, fmt.Errorf("failed to find value")
 }
 
 func getCompressedKeyString(key curves.Point) string {
