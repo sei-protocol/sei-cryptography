@@ -1,7 +1,6 @@
 package zkproofs
 
 import (
-	crand "crypto/rand"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -48,8 +47,16 @@ func NewCiphertextValidityProof(pedersenOpening *curves.Scalar, pubKey curves.Po
 	x, _ := ed25519.Scalar.SetBigInt(message)
 
 	// Step 1: Generate random blinding factors for the proof
-	rBlind := ed25519.Scalar.Random(crand.Reader) // Blinding factor for random value r
-	xBlind := ed25519.Scalar.Random(crand.Reader) // Blinding factor for random value x
+	curve := curves.ED25519()
+	rBlind, err := GenerateRandomScalar(curve) // Blinding factor for random value r
+	if err != nil {
+		return nil, err
+	}
+
+	xBlind, err := GenerateRandomScalar(curve) // Blinding factor for random value x
+	if err != nil {
+		return nil, err
+	}
 
 	// Step 2: Create commitments
 	rBlindH := H.Mul(rBlind)            // rBlind * H

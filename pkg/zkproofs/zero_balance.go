@@ -1,7 +1,6 @@
 package zkproofs
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 
@@ -38,7 +37,11 @@ func NewZeroBalanceProof(
 	D := ciphertext.D
 
 	// Generate random masking factor y
-	y := curves.ED25519().Scalar.Random(rand.Reader)
+	curve := curves.ED25519()
+	y, err := GenerateRandomScalar(curve)
+	if err != nil {
+		return nil, err
+	}
 
 	// Compute Yp = y * P and Yd = y * D
 	Yp := P.Mul(y)

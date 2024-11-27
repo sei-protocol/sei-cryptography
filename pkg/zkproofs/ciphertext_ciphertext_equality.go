@@ -1,7 +1,6 @@
 package zkproofs
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 
@@ -68,10 +67,19 @@ func NewCiphertextCiphertextEqualityProof(
 	r := *destinationOpening
 
 	// Generate random scalars
-	ed25519 := curves.ED25519()
-	ys := ed25519.Scalar.Random(rand.Reader)
-	yx := ed25519.Scalar.Random(rand.Reader)
-	yr := ed25519.Scalar.Random(rand.Reader)
+	curve := curves.ED25519()
+	ys, err := GenerateRandomScalar(curve)
+	if err != nil {
+		return nil, err
+	}
+	yx, err := GenerateRandomScalar(curve)
+	if err != nil {
+		return nil, err
+	}
+	yr, err := GenerateRandomScalar(curve)
+	if err != nil {
+		return nil, err
+	}
 
 	eg := elgamal.NewTwistedElgamal()
 	G := eg.GetG()

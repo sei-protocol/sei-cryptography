@@ -1,7 +1,6 @@
 package zkproofs
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 
@@ -37,8 +36,13 @@ func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) (*PubKey
 
 	eg := elgamal.NewTwistedElgamal()
 	H := eg.GetH()
+	
 	// Prover generates a random scalar y
-	y := curves.ED25519().Scalar.Random(rand.Reader)
+	curve := curves.ED25519()
+	y, err := GenerateRandomScalar(curve)
+	if err != nil {
+		return nil, err
+	}
 
 	// Commitment Y = y * H
 	Y := H.Mul(y)

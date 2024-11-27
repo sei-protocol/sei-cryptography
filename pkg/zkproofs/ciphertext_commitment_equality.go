@@ -1,7 +1,6 @@
 package zkproofs
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"errors"
 
@@ -60,11 +59,22 @@ func NewCiphertextCommitmentEqualityProof(
 	G := eg.GetG() // Fixed base point G
 	H := eg.GetH() // Fixed base point H
 
-	ed25519 := curves.ED25519()
 	// Generate random masking factors
-	ys := ed25519.Scalar.Random(rand.Reader)
-	yx := ed25519.Scalar.Random(rand.Reader)
-	yr := ed25519.Scalar.Random(rand.Reader)
+	curve := curves.ED25519()
+	ys, err := GenerateRandomScalar(curve)
+	if err != nil {
+		return nil, err
+	}
+
+	yx, err := GenerateRandomScalar(curve)
+	if err != nil {
+		return nil, err
+	}
+
+	yr, err := GenerateRandomScalar(curve)
+	if err != nil {
+		return nil, err
+	}
 
 	// Compute Y0 = ys * P
 	Y0 := P.Mul(ys)
