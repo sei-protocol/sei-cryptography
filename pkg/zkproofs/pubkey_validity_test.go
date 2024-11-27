@@ -2,10 +2,11 @@ package zkproofs
 
 import (
 	"encoding/json"
+	"testing"
+
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestPubKeyValidityProof(t *testing.T) {
@@ -21,16 +22,16 @@ func TestPubKeyValidityProof(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the proof
-	valid := VerifyPubKeyValidity(keys.PublicKey, *proof)
+	valid := VerifyPubKeyValidity(keys.PublicKey, proof)
 	require.True(t, valid, "Valid Proof should be validated as true")
 
-	invalid := VerifyPubKeyValidity(altKeys.PublicKey, *proof)
+	invalid := VerifyPubKeyValidity(altKeys.PublicKey, proof)
 	require.False(t, invalid, "Proof should be invalid when trying to validate wrong PublicKey")
 
 	// Generate proof with the wrong private key.
 	badProof, err := NewPubKeyValidityProof(keys.PublicKey, altKeys.PrivateKey)
 	require.Nil(t, err)
-	invalid = VerifyPubKeyValidity(keys.PublicKey, *badProof)
+	invalid = VerifyPubKeyValidity(keys.PublicKey, badProof)
 	require.False(t, invalid, "Proof generated with wrong Privkey should be validated as false.")
 }
 
@@ -80,11 +81,11 @@ func TestVerifyPubKeyValidityProof_InvalidInput(t *testing.T) {
 	require.Nil(t, err)
 
 	// Verify the proof
-	valid := VerifyPubKeyValidity(nil, *proof)
+	valid := VerifyPubKeyValidity(nil, proof)
 	require.False(t, valid, "proof verification should fail for nil public key")
 
 	invalidProof := PubKeyValidityProof{}
 
-	valid = VerifyPubKeyValidity(keys.PublicKey, invalidProof)
+	valid = VerifyPubKeyValidity(keys.PublicKey, &invalidProof)
 	require.False(t, valid, "proof verification should fail for invalid proof")
 }

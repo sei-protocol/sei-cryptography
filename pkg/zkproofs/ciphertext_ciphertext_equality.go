@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
+
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 )
@@ -133,16 +134,15 @@ func VerifyCiphertextCiphertextEquality(
 	sourceCiphertext *elgamal.Ciphertext,
 	destinationCiphertext *elgamal.Ciphertext,
 ) bool {
-	// validate proof for nil values
-	if proof == nil || proof.Y0 == nil || proof.Y1 == nil || proof.Y2 == nil || proof.Y3 == nil || proof.Zs == nil ||
-		proof.Zx == nil || proof.Zr == nil {
+	// validate inputs
+	if proof == nil || sourcePubKey == nil || destinationPubKey == nil ||
+		sourceCiphertext == nil || sourceCiphertext.C == nil || sourceCiphertext.D == nil ||
+		destinationCiphertext == nil || destinationCiphertext.C == nil || destinationCiphertext.D == nil {
 		return false
 	}
 
-	// validate other input
-	if sourcePubKey == nil || destinationPubKey == nil ||
-		sourceCiphertext == nil || sourceCiphertext.C == nil || sourceCiphertext.D == nil ||
-		destinationCiphertext == nil || destinationCiphertext.C == nil || destinationCiphertext.D == nil {
+	// validate proof for nil values
+	if !proof.validateContents() {
 		return false
 	}
 
@@ -211,6 +211,21 @@ func VerifyCiphertextCiphertextEquality(
 	rhsY3 := proof.Y3.Add(cDd)
 
 	return lhsY3.Equal(rhsY3)
+}
+
+func (c *CiphertextCiphertextEqualityProof) validateContents() bool {
+	// Validate that fields are not nil
+	if c == nil || c.Y0 == nil || c.Y1 == nil || c.Y2 == nil || c.Y3 == nil || c.Zs == nil ||
+		c.Zx == nil || c.Zr == nil {
+		return false
+	}
+
+	// Validate that fields are non zero. Though it is technically possible if the randomly generated scalars are zero, it is highly unlikely (1 in 2^255 chance)
+	if c.Y0.IsIdentity() || c.Y1.IsIdentity() || c.Y2.IsIdentity() || c.Y3.IsIdentity() || c.Zr.IsZero() || c.Zs.IsZero() || c.Zx.IsZero() {
+		return false
+	}
+
+	return true
 }
 
 // MarshalJSON for CiphertextCiphertextEqualityProof

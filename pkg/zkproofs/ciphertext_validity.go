@@ -88,8 +88,11 @@ func NewCiphertextValidityProof(pedersenOpening *curves.Scalar, pubKey curves.Po
 // - ciphertext: The ciphertext to prove the validity of.
 func VerifyCiphertextValidity(proof *CiphertextValidityProof, pubKey curves.Point, ciphertext *elgamal.Ciphertext) bool {
 	// Validate input
-	if proof == nil || proof.Commitment1 == nil || proof.Commitment2 == nil || proof.Response1 == nil ||
-		proof.Response2 == nil || pubKey == nil || ciphertext == nil || ciphertext.C == nil || ciphertext.D == nil {
+	if proof == nil || pubKey == nil || ciphertext == nil || ciphertext.C == nil || ciphertext.D == nil {
+		return false
+	}
+
+	if !proof.validateContents() {
 		return false
 	}
 
@@ -117,6 +120,18 @@ func VerifyCiphertextValidity(proof *CiphertextValidityProof, pubKey curves.Poin
 
 	// Step 3: Check if the recomputed commitments match the original commitments
 	return recomputedCommitment1.Equal(proof.Commitment1) && recomputedCommitment2.Equal(proof.Commitment2)
+}
+
+func (p *CiphertextValidityProof) validateContents() bool {
+	if p.Commitment1 == nil || p.Commitment2 == nil || p.Response1 == nil || p.Response2 == nil {
+		return false
+	}
+
+	if p.Commitment1.IsIdentity() || p.Commitment2.IsIdentity() || p.Response1.IsZero() || p.Response2.IsZero() {
+		return false
+	}
+
+	return true
 }
 
 // MarshalJSON for CiphertextValidityProof

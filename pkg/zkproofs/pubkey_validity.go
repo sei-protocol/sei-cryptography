@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"errors"
+
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 )
@@ -65,9 +66,12 @@ func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) (*PubKey
 // Parameters:
 // - pubKey: The PublicKey to validate.
 // - proof: The proof that the prover knows the corresponding PrivateKey.
-func VerifyPubKeyValidity(pubKey curves.Point, proof PubKeyValidityProof) bool {
+func VerifyPubKeyValidity(pubKey curves.Point, proof *PubKeyValidityProof) bool {
 	// Validate input
-	if pubKey == nil || proof.Y == nil || proof.Z == nil {
+	if proof == nil || pubKey == nil {
+		return false
+	}
+	if !proof.validateContents() {
 		return false
 	}
 
@@ -90,6 +94,18 @@ func VerifyPubKeyValidity(pubKey curves.Point, proof PubKeyValidityProof) bool {
 
 	// Check if z * H == c * P + Y
 	return lhs.Equal(rhs)
+}
+
+func (p *PubKeyValidityProof) validateContents() bool {
+	if p.Y == nil || p.Z == nil {
+		return false
+	}
+
+	if p.Y.IsIdentity() || p.Z.IsZero() {
+		return false
+	}
+
+	return true
 }
 
 // MarshalJSON for PubKeyValidityProof
