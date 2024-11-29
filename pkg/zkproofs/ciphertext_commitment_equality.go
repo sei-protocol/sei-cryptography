@@ -61,17 +61,17 @@ func NewCiphertextCommitmentEqualityProof(
 
 	// Generate random masking factors
 	curve := curves.ED25519()
-	ys, err := GenerateRandomScalar(curve)
+	ys, err := GenerateRandomNonZeroScalar(curve)
 	if err != nil {
 		return nil, err
 	}
 
-	yx, err := GenerateRandomScalar(curve)
+	yx, err := GenerateRandomNonZeroScalar(curve)
 	if err != nil {
 		return nil, err
 	}
 
-	yr, err := GenerateRandomScalar(curve)
+	yr, err := GenerateRandomNonZeroScalar(curve)
 	if err != nil {
 		return nil, err
 	}

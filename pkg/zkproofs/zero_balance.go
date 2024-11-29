@@ -38,7 +38,7 @@ func NewZeroBalanceProof(
 
 	// Generate random masking factor y
 	curve := curves.ED25519()
-	y, err := GenerateRandomScalar(curve)
+	y, err := GenerateRandomNonZeroScalar(curve)
 	if err != nil {
 		return nil, err
 	}

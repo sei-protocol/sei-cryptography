@@ -48,12 +48,12 @@ func NewCiphertextValidityProof(pedersenOpening *curves.Scalar, pubKey curves.Po
 
 	// Step 1: Generate random blinding factors for the proof
 	curve := curves.ED25519()
-	rBlind, err := GenerateRandomScalar(curve) // Blinding factor for random value r
+	rBlind, err := GenerateRandomNonZeroScalar(curve) // Blinding factor for random value r
 	if err != nil {
 		return nil, err
 	}
 
-	xBlind, err := GenerateRandomScalar(curve) // Blinding factor for random value x
+	xBlind, err := GenerateRandomNonZeroScalar(curve) // Blinding factor for random value x
 	if err != nil {
 		return nil, err
 	}

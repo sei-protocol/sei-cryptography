@@ -68,15 +68,15 @@ func NewCiphertextCiphertextEqualityProof(
 
 	// Generate random scalars
 	curve := curves.ED25519()
-	ys, err := GenerateRandomScalar(curve)
+	ys, err := GenerateRandomNonZeroScalar(curve)
 	if err != nil {
 		return nil, err
 	}
-	yx, err := GenerateRandomScalar(curve)
+	yx, err := GenerateRandomNonZeroScalar(curve)
 	if err != nil {
 		return nil, err
 	}
-	yr, err := GenerateRandomScalar(curve)
+	yr, err := GenerateRandomNonZeroScalar(curve)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func VerifyCiphertextCiphertextEquality(
 		return false
 	}
 
-	// validate proof for nil values
+	// validate proof for nil and zero values
 	if !proof.validateContents() {
 		return false
 	}

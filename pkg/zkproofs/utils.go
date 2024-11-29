@@ -7,19 +7,21 @@ import (
 	"github.com/coinbase/kryptology/pkg/core/curves"
 )
 
-// Generates a non-zero random scalar. The chances of generating a zero scalar are very low.
-func GenerateRandomScalar(curve *curves.Curve) (curves.Scalar, error) {
-	attempts := 0
-	scalar := curve.Scalar.Random(rand.Reader)
-	// Try 5 times to generate a non zero scalar. The chance that this fails with a normal random number generator is impossibly low.
-	for scalar.IsZero() && attempts < 5 {
-		curve.Scalar.Random(rand.Reader)
-		attempts += 1
+// GenerateRandomNonZeroScalar Generates a non-zero random scalar.
+// Parameters:
+// - curve: The elliptic curve to use for scalar generation.
+// Returns:
+// - A non-zero random scalar.
+// - An error if the scalar generation fails.
+func GenerateRandomNonZeroScalar(curve *curves.Curve) (curves.Scalar, error) {
+	var scalar curves.Scalar
+
+	for attempts := 0; attempts < 5; attempts++ {
+		scalar = curve.Scalar.Random(rand.Reader)
+		if !scalar.IsZero() {
+			return scalar, nil
+		}
 	}
 
-	if scalar.IsZero() {
-		return nil, errors.New("failed to generate a non-zero scalar")
-	}
-
-	return scalar, nil
+	return nil, errors.New("failed to generate a non-zero scalar")
 }

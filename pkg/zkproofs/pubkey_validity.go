@@ -36,10 +36,10 @@ func NewPubKeyValidityProof(pubKey curves.Point, privKey curves.Scalar) (*PubKey
 
 	eg := elgamal.NewTwistedElgamal()
 	H := eg.GetH()
-	
+
 	// Prover generates a random scalar y
 	curve := curves.ED25519()
-	y, err := GenerateRandomScalar(curve)
+	y, err := GenerateRandomNonZeroScalar(curve)
 	if err != nil {
 		return nil, err
 	}
