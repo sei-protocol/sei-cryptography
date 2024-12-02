@@ -301,5 +301,27 @@ func TestVerifyRangeProof_InvalidInput(t *testing.T) {
 		require.EqualError(t, err, "invalid ciphertext")
 		require.False(t, valid)
 	})
+}
 
+func TestRangeProofsPerformance(t *testing.T) {
+	value := big.NewInt(10)
+	n := 32 // the range is [0, 2^128]
+
+	privateKey, err := testutils.GenerateKey()
+	require.Nil(t, err, "Error generating private key")
+
+	eg := elgamal.NewTwistedElgamal()
+	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	require.Nil(t, err, "Error generating key pair")
+
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
+
+	for i := 0; i < 100; i++ {
+		proof, err := NewRangeProof(n, value, gamma)
+		require.Nil(t, err)
+
+		verified, err := VerifyRangeProof(proof, ciphertext, n)
+		require.NoError(t, err)
+		require.True(t, verified)
+	}
 }

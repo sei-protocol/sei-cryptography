@@ -279,4 +279,19 @@ func TestVerifyZeroProof_InvalidInput(t *testing.T) {
 	}
 	valid = VerifyZeroBalance(invalidProof, &keypair.PublicKey, ciphertext)
 	require.False(t, valid, "Verification should fail with invalid proof values")
+
+	invalidParamsProof := *proof
+	invalidParamsProof.Yp = curves.ED25519().NewIdentityPoint()
+	valid = VerifyZeroBalance(&invalidParamsProof, &keypair.PublicKey, ciphertext)
+	require.False(t, valid, "Verification should fail with invalid proof params")
+
+	invalidParamsProof = *proof
+	invalidParamsProof.Z = curves.ED25519().Scalar.Zero()
+	valid = VerifyZeroBalance(&invalidParamsProof, &keypair.PublicKey, ciphertext)
+	require.False(t, valid, "Verification should fail with invalid proof params")
+
+	invalidParamsProof = *proof
+	invalidParamsProof.Yd = nil
+	valid = VerifyZeroBalance(&invalidParamsProof, &keypair.PublicKey, ciphertext)
+	require.False(t, valid, "Verification should fail with invalid proof params")
 }

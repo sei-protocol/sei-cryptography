@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 	testutils "github.com/sei-protocol/sei-cryptography/pkg/testing"
 	"github.com/stretchr/testify/require"
@@ -153,6 +154,30 @@ func TestVerifyCiphertextValidityProof_Invalid_Input(t *testing.T) {
 	t.Run("Invalid proof with nil fields", func(t *testing.T) {
 		validated := VerifyCiphertextValidity(&CiphertextValidityProof{}, keys.PublicKey, ciphertext)
 		require.False(t, validated, "Validation should fail for proof with nil fields")
+	})
+
+	t.Run("Invalid Proof Params", func(t *testing.T) {
+		// Y2 is zero point
+		clone := *proof
+		clone.Commitment1 = curves.ED25519().NewIdentityPoint()
+		valid := VerifyCiphertextValidity(
+			&clone, keys.PublicKey, ciphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for proof params with zero value")
+
+		clone = *proof
+		clone.Response1 = curves.ED25519().Scalar.Zero()
+		valid = VerifyCiphertextValidity(
+			&clone, keys.PublicKey, ciphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for proof params with zero value")
+
+		clone = *proof
+		clone.Commitment2 = nil
+		valid = VerifyCiphertextValidity(
+			&clone, keys.PublicKey, ciphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for proof params with zero value")
 	})
 
 	t.Run("Invalid Public Key", func(t *testing.T) {

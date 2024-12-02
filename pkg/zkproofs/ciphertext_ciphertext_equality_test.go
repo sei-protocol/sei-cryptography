@@ -415,4 +415,40 @@ func TestVerifyCiphertextCiphertextEquality_InvalidInputs(t *testing.T) {
 		)
 		require.False(t, valid, "Proof verification should fail for nil destination ciphertext")
 	})
+
+	t.Run("Invalid Proof Params", func(t *testing.T) {
+		// Y2 is zero point
+		clone := *proof
+		clone.Y2 = curves.ED25519().NewIdentityPoint()
+		valid := VerifyCiphertextCiphertextEquality(
+			&clone,
+			&sourceKeypair.PublicKey,
+			&destinationKeypair.PublicKey,
+			sourceCiphertext,
+			sourceCiphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for proof params with zero value")
+
+		clone = *proof
+		clone.Zx = curves.ED25519().Scalar.Zero()
+		valid = VerifyCiphertextCiphertextEquality(
+			&clone,
+			&sourceKeypair.PublicKey,
+			&destinationKeypair.PublicKey,
+			sourceCiphertext,
+			sourceCiphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for proof params with zero value")
+
+		clone = *proof
+		clone.Y1 = nil
+		valid = VerifyCiphertextCiphertextEquality(
+			&clone,
+			&sourceKeypair.PublicKey,
+			&destinationKeypair.PublicKey,
+			sourceCiphertext,
+			sourceCiphertext,
+		)
+		require.False(t, valid, "Proof verification should fail for proof params with zero value")
+	})
 }
