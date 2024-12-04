@@ -164,7 +164,8 @@ func TestRangeProofs(t *testing.T) {
 	proof, err := NewRangeProof(n, value, gamma)
 	require.Nil(t, err)
 
-	verified, err := VerifyRangeProof(proof, ciphertext, n)
+	verifier := NewCachedRangeVerifier()
+	verified, err := verifier.VerifyRangeProof(proof, ciphertext, n)
 	require.NoError(t, err)
 	require.True(t, verified)
 
@@ -172,7 +173,7 @@ func TestRangeProofs(t *testing.T) {
 	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, big.NewInt(101))
 	require.Nil(t, err)
 
-	verified, err = VerifyRangeProof(proof, ciphertext101, n)
+	verified, err = verifier.VerifyRangeProof(proof, ciphertext101, n)
 	require.Error(t, err)
 	require.False(t, verified)
 }
@@ -193,7 +194,9 @@ func TestRangeProofsLargeN(t *testing.T) {
 	proof, err := NewRangeProof(n, value, gamma)
 	require.Nil(t, err)
 
-	verified, err := VerifyRangeProof(proof, ciphertext, n)
+	verifier := NewCachedRangeVerifier()
+
+	verified, err := verifier.VerifyRangeProof(proof, ciphertext, n)
 	require.NoError(t, err)
 	require.True(t, verified)
 
@@ -201,7 +204,7 @@ func TestRangeProofsLargeN(t *testing.T) {
 	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, big.NewInt(101))
 	require.Nil(t, err)
 
-	verified, err = VerifyRangeProof(proof, ciphertext101, n)
+	verified, err = verifier.VerifyRangeProof(proof, ciphertext101, n)
 	require.Error(t, err)
 	require.False(t, verified)
 }
@@ -233,7 +236,9 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 	err = json.Unmarshal(marshaledProof, &unmarshaled)
 	require.NoError(t, err, "Unmarshaling should not produce an error")
 
-	verified, err := VerifyRangeProof(&unmarshaled, ciphertext, n)
+	verifier := NewCachedRangeVerifier()
+
+	verified, err := verifier.VerifyRangeProof(&unmarshaled, ciphertext, n)
 	require.NoError(t, err)
 	require.True(t, verified)
 }
@@ -275,37 +280,40 @@ func TestVerifyRangeProof_InvalidInput(t *testing.T) {
 	proof, err := NewRangeProof(64, value, gamma)
 	require.NoError(t, err)
 
+	verifier := NewCachedRangeVerifier()
+
 	t.Run("Nil proof", func(t *testing.T) {
 		// Proof is nil
-		valid, err := VerifyRangeProof(nil, ciphertext, 64)
+		valid, err := verifier.VerifyRangeProof(nil, ciphertext, 64)
 		require.EqualError(t, err, "invalid proof")
 		require.False(t, valid)
 	})
 
 	t.Run("Proof with nil fields", func(t *testing.T) {
-		valid, err := VerifyRangeProof(&RangeProof{}, ciphertext, 64)
+		valid, err := verifier.VerifyRangeProof(&RangeProof{}, ciphertext, 64)
 		require.EqualError(t, err, "invalid proof")
 		require.False(t, valid)
 	})
 
 	t.Run("nil ciphertext", func(t *testing.T) {
 		// Proof is nil
-		valid, err := VerifyRangeProof(proof, nil, 64)
+		valid, err := verifier.VerifyRangeProof(proof, nil, 64)
 		require.EqualError(t, err, "invalid ciphertext")
 		require.False(t, valid)
 	})
 
 	t.Run("Ciphertext with nil fields", func(t *testing.T) {
 		// Proof is nil
-		valid, err := VerifyRangeProof(proof, &elgamal.Ciphertext{}, 64)
+		valid, err := verifier.VerifyRangeProof(proof, &elgamal.Ciphertext{}, 64)
 		require.EqualError(t, err, "invalid ciphertext")
 		require.False(t, valid)
 	})
 }
 
-func TestRangeProofsPerformance(t *testing.T) {
+// Test that verifiers cannot be used for upper bounds other than the ones they were created for.
+func TestRangeProofsDifferentUpperBound(t *testing.T) {
 	value := big.NewInt(10)
-	n := 32 // the range is [0, 2^128]
+	n := 128 // the range is [0, 2^128]
 
 	privateKey, err := testutils.GenerateKey()
 	require.Nil(t, err, "Error generating private key")
@@ -316,12 +324,70 @@ func TestRangeProofsPerformance(t *testing.T) {
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
 
-	for i := 0; i < 100; i++ {
-		proof, err := NewRangeProof(n, value, gamma)
-		require.Nil(t, err)
+	proof, err := NewRangeProof(n, value, gamma)
+	require.Nil(t, err)
 
-		verified, err := VerifyRangeProof(proof, ciphertext, n)
-		require.NoError(t, err)
-		require.True(t, verified)
-	}
+	// Create a verifier with len 128 vector
+	verifier := NewCachedRangeVerifier()
+
+	// Verify that this works normally for verifying a proof with the same upper bound
+	verified, err := verifier.VerifyRangeProof(proof, ciphertext, n)
+	require.NoError(t, err)
+	require.True(t, verified)
+
+	// Verify that this doesn't work when we try to verify a proof with a different upper bound.
+	proof, err = NewRangeProof(64, value, gamma)
+	require.Nil(t, err)
+
+	verified, err = verifier.VerifyRangeProof(proof, ciphertext, 64)
+	require.NoError(t, err)
+	require.False(t, verified)
+
+	verified, err = verifier.VerifyRangeProof(proof, ciphertext, 128)
+	require.NoError(t, err)
+	require.False(t, verified)
+}
+
+// Test that it is fine to reuse verifiers.
+func TestRangeProofVerifierReuse(t *testing.T) {
+	value := big.NewInt(10)
+	n := 128 // the range is [0, 2^128]
+
+	privateKey, err := testutils.GenerateKey()
+	require.Nil(t, err, "Error generating private key")
+
+	eg := elgamal.NewTwistedElgamal()
+	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	require.Nil(t, err, "Error generating key pair")
+
+	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
+
+	proof, err := NewRangeProof(n, value, gamma)
+	require.Nil(t, err)
+
+	// Create a verifier with len 128 vector
+	verifier := NewCachedRangeVerifier()
+
+	// Verify that this works normally for verifying a proof with the same upper bound
+	verified, err := verifier.VerifyRangeProof(proof, ciphertext, n)
+	require.NoError(t, err)
+	require.True(t, verified)
+
+	// Verify that this still works on a different proof
+	proof, err = NewRangeProof(n, value, gamma)
+	require.Nil(t, err)
+
+	verified, err = verifier.VerifyRangeProof(proof, ciphertext, n)
+	require.NoError(t, err)
+	require.True(t, verified)
+
+	// Verify that this still works on a proof on a different value
+	newValue := big.NewInt(10238032)
+	newCiphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, newValue)
+	proof, err = NewRangeProof(n, newValue, gamma)
+	require.Nil(t, err)
+
+	verified, err = verifier.VerifyRangeProof(proof, newCiphertext, n)
+	require.NoError(t, err)
+	require.True(t, verified)
 }
