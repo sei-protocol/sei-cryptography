@@ -261,6 +261,39 @@ func TestVerifyCiphertextCommitmentEquality_InvalidInput(t *testing.T) {
 		require.False(t, valid, "Proof verification should fail for proof with nil fields")
 	})
 
+	t.Run("Invalid Proof Params", func(t *testing.T) {
+		// Y2 is zero point
+		clone := *proof
+		clone.Y2 = curves.ED25519().NewIdentityPoint()
+		valid := VerifyCiphertextCommitmentEquality(
+			&clone,
+			&sourceKeypair.PublicKey,
+			sourceCiphertext,
+			&sourceCiphertext.C,
+		)
+		require.False(t, valid, "Proof verification should fail for proof params with zero value")
+
+		clone = *proof
+		clone.Zx = curves.ED25519().Scalar.Zero()
+		valid = VerifyCiphertextCommitmentEquality(
+			&clone,
+			&sourceKeypair.PublicKey,
+			sourceCiphertext,
+			&sourceCiphertext.C,
+		)
+		require.False(t, valid, "Proof verification should fail for proof params with zero value")
+
+		clone = *proof
+		clone.Y1 = nil
+		valid = VerifyCiphertextCommitmentEquality(
+			&clone,
+			&sourceKeypair.PublicKey,
+			sourceCiphertext,
+			&sourceCiphertext.C,
+		)
+		require.False(t, valid, "Proof verification should fail for proof params with zero value")
+	})
+
 	t.Run("Invalid Source Public Key", func(t *testing.T) {
 		// Source public key is nil
 		valid := VerifyCiphertextCommitmentEquality(

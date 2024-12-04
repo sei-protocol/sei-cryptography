@@ -1,9 +1,9 @@
 package zkproofs
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"errors"
+
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 )
@@ -37,7 +37,11 @@ func NewZeroBalanceProof(
 	D := ciphertext.D
 
 	// Generate random masking factor y
-	y := curves.ED25519().Scalar.Random(rand.Reader)
+	curve := curves.ED25519()
+	y, err := GenerateRandomNonZeroScalar(curve)
+	if err != nil {
+		return nil, err
+	}
 
 	// Compute Yp = y * P and Yd = y * D
 	Yp := P.Mul(y)
@@ -71,8 +75,10 @@ func VerifyZeroBalance(
 	pubKey *curves.Point,
 	ciphertext *elgamal.Ciphertext,
 ) bool {
-	if proof == nil || proof.Yp == nil || proof.Yd == nil || proof.Z == nil || pubKey == nil ||
-		ciphertext == nil || ciphertext.C == nil || ciphertext.D == nil {
+	if proof == nil || pubKey == nil || ciphertext == nil || ciphertext.C == nil || ciphertext.D == nil {
+		return false
+	}
+	if !proof.validateContents() {
 		return false
 	}
 
@@ -107,6 +113,18 @@ func VerifyZeroBalance(
 	rhsYd := cC.Add(proof.Yd) // c * C + Yd
 
 	return lhsYd.Equal(rhsYd)
+}
+
+func (p *ZeroBalanceProof) validateContents() bool {
+	if p.Yp == nil || p.Yd == nil || p.Z == nil {
+		return false
+	}
+
+	if p.Yp.IsIdentity() || p.Yd.IsIdentity() || p.Z.IsZero() {
+		return false
+	}
+
+	return true
 }
 
 // MarshalJSON for ZeroBalanceProof

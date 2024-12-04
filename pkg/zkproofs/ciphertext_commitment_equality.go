@@ -1,9 +1,9 @@
 package zkproofs
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"errors"
+
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/sei-protocol/sei-cryptography/pkg/encryption/elgamal"
 )
@@ -59,11 +59,22 @@ func NewCiphertextCommitmentEqualityProof(
 	G := eg.GetG() // Fixed base point G
 	H := eg.GetH() // Fixed base point H
 
-	ed25519 := curves.ED25519()
 	// Generate random masking factors
-	ys := ed25519.Scalar.Random(rand.Reader)
-	yx := ed25519.Scalar.Random(rand.Reader)
-	yr := ed25519.Scalar.Random(rand.Reader)
+	curve := curves.ED25519()
+	ys, err := GenerateRandomNonZeroScalar(curve)
+	if err != nil {
+		return nil, err
+	}
+
+	yx, err := GenerateRandomNonZeroScalar(curve)
+	if err != nil {
+		return nil, err
+	}
+
+	yr, err := GenerateRandomNonZeroScalar(curve)
+	if err != nil {
+		return nil, err
+	}
 
 	// Compute Y0 = ys * P
 	Y0 := P.Mul(ys)
@@ -118,14 +129,13 @@ func VerifyCiphertextCommitmentEquality(
 	sourceCiphertext *elgamal.Ciphertext,
 	pedersenCommitment *curves.Point,
 ) bool {
-	// Validate proof
-	if proof == nil || proof.Y0 == nil || proof.Y1 == nil || proof.Y2 == nil || proof.Zs == nil || proof.Zx == nil ||
-		proof.Zr == nil {
+	// Validate input
+	if proof == nil || sourcePubKey == nil || sourceCiphertext == nil || pedersenCommitment == nil {
 		return false
 	}
 
-	// Validate input
-	if sourcePubKey == nil || sourceCiphertext == nil || pedersenCommitment == nil {
+	// Validate proof
+	if !proof.validateContents() {
 		return false
 	}
 
@@ -174,6 +184,18 @@ func VerifyCiphertextCommitmentEquality(
 	rhsY2 := cCPed.Add(proof.Y2) // c * cPed + Y2
 
 	return lhsY2.Equal(rhsY2)
+}
+
+func (c *CiphertextCommitmentEqualityProof) validateContents() bool {
+	if c.Y0 == nil || c.Y1 == nil || c.Y2 == nil || c.Zs == nil || c.Zx == nil || c.Zr == nil {
+		return false
+	}
+
+	if c.Y0.IsIdentity() || c.Y1.IsIdentity() || c.Y2.IsIdentity() || c.Zs.IsZero() || c.Zx.IsZero() || c.Zr.IsZero() {
+		return false
+	}
+
+	return true
 }
 
 // MarshalJSON for CiphertextCommitmentEqualityProof
