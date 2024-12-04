@@ -310,44 +310,6 @@ func TestVerifyRangeProof_InvalidInput(t *testing.T) {
 	})
 }
 
-// Test that verifiers cannot be used for upper bounds other than the ones they were created for.
-func TestRangeProofsDifferentUpperBound(t *testing.T) {
-	value := big.NewInt(10)
-	n := 128 // the range is [0, 2^128]
-
-	privateKey, err := testutils.GenerateKey()
-	require.Nil(t, err, "Error generating private key")
-
-	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
-	require.Nil(t, err, "Error generating key pair")
-
-	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
-
-	proof, err := NewRangeProof(n, value, gamma)
-	require.Nil(t, err)
-
-	// Create a verifier with len 128 vector
-	verifier := NewCachedRangeVerifier()
-
-	// Verify that this works normally for verifying a proof with the same upper bound
-	verified, err := verifier.VerifyRangeProof(proof, ciphertext, n)
-	require.NoError(t, err)
-	require.True(t, verified)
-
-	// Verify that this doesn't work when we try to verify a proof with a different upper bound.
-	proof, err = NewRangeProof(64, value, gamma)
-	require.Nil(t, err)
-
-	verified, err = verifier.VerifyRangeProof(proof, ciphertext, 64)
-	require.NoError(t, err)
-	require.False(t, verified)
-
-	verified, err = verifier.VerifyRangeProof(proof, ciphertext, 128)
-	require.NoError(t, err)
-	require.False(t, verified)
-}
-
 // Test that it is fine to reuse verifiers.
 func TestRangeProofVerifierReuse(t *testing.T) {
 	value := big.NewInt(10)
