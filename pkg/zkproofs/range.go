@@ -21,17 +21,49 @@ type RangeProof struct {
 	UpperBound int
 }
 
+type Verifier interface {
+	getVerifier(upperBound int) (*bulletproof.RangeVerifier, error)
+}
+
 // Caches the verifiers created for each upper bound
 type CachedRangeVerifier struct {
 	verifiers map[int]*bulletproof.RangeVerifier
+	delegator Verifier
 }
 
-func NewCachedRangeVerifier() *CachedRangeVerifier {
+type Ed2559Verifier struct{}
+
+func NewCachedRangeVerifier(delegator Verifier) *CachedRangeVerifier {
 	mapping := make(map[int]*bulletproof.RangeVerifier)
 
 	return &CachedRangeVerifier{
 		verifiers: mapping,
+		delegator: delegator,
 	}
+}
+
+func (c *CachedRangeVerifier) getVerifier(upperBound int) (*bulletproof.RangeVerifier, error) {
+	verifier, exists := c.verifiers[upperBound]
+	if exists {
+		return verifier, nil
+	}
+
+	verifier, err := c.delegator.getVerifier(upperBound)
+	if err != nil {
+		return nil, err
+	}
+
+	c.verifiers[upperBound] = verifier
+	return verifier, nil
+}
+
+func (e *Ed2559Verifier) getVerifier(upperBound int) (*bulletproof.RangeVerifier, error) {
+	curve := curves.ED25519()
+	verifier, err := bulletproof.NewRangeVerifier(upperBound, getRangeDomain(), getIppDomain(), *curve)
+	if err != nil {
+		return nil, err
+	}
+	return verifier, nil
 }
 
 // NewRangeProof generates a range proof for some ciphertext that proves the value is between 0 and 2^upperBound
@@ -77,7 +109,7 @@ func NewRangeProof(upperBound int, value *big.Int, randomness curves.Scalar) (*R
 // - proof: The range proof to verify
 // - ciphertext: The ciphertext for which we are verifying the range proof
 // - upperBound: The upper bound of the range we want to prove the value lies within, calculated as 2^upperBound
-func (r *CachedRangeVerifier) VerifyRangeProof(proof *RangeProof, ciphertext *elgamal.Ciphertext, upperBound int) (bool, error) {
+func (c *CachedRangeVerifier) VerifyRangeProof(proof *RangeProof, ciphertext *elgamal.Ciphertext, upperBound int) (bool, error) {
 	// Validate input
 	if proof == nil || proof.Proof == nil || proof.Randomness == nil {
 		return false, errors.New("invalid proof")
@@ -92,8 +124,7 @@ func (r *CachedRangeVerifier) VerifyRangeProof(proof *RangeProof, ciphertext *el
 	h := eg.GetH()
 	proofGenerators := bulletproof.NewRangeProofGenerators(g, h, proof.Randomness)
 
-	// Get the verifier from the cache, then verify.
-	verifier, err := r.addRangeVerifier(upperBound)
+	verifier, err := c.getVerifier(upperBound)
 	if err != nil {
 		return false, err
 	}
@@ -105,8 +136,8 @@ func (r *CachedRangeVerifier) VerifyRangeProof(proof *RangeProof, ciphertext *el
 	return verified, nil
 }
 
-// addRangeVerifier adds a verifier for the given upper bound to the cache
-func (r *CachedRangeVerifier) addRangeVerifier(upperBound int) (*bulletproof.RangeVerifier, error) {
+// getRangeVerifier adds a verifier for the given upper bound to the cache
+func (r *CachedRangeVerifier) getRangeVerifier(upperBound int) (*bulletproof.RangeVerifier, error) {
 	verifier, exists := r.verifiers[upperBound]
 	if exists {
 		return verifier, nil
