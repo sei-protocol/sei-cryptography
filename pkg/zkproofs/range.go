@@ -21,6 +21,27 @@ type RangeProof struct {
 	UpperBound int
 }
 
+type VerifierFactory interface {
+	getVerifier(upperBound int) (*bulletproof.RangeVerifier, error)
+}
+
+// Caches the verifiers created for each upper bound
+type CachedRangeVerifierFactory struct {
+	verifiers map[int]*bulletproof.RangeVerifier
+	delegator VerifierFactory
+}
+
+type Ed25519RangeVerifierFactory struct{}
+
+func NewCachedRangeVerifierFactory(delegator VerifierFactory) *CachedRangeVerifierFactory {
+	mapping := make(map[int]*bulletproof.RangeVerifier)
+
+	return &CachedRangeVerifierFactory{
+		verifiers: mapping,
+		delegator: delegator,
+	}
+}
+
 // NewRangeProof generates a range proof for some ciphertext that proves the value is between 0 and 2^upperBound
 // Parameters:
 // - upperBound The upper bound of the range we want to prove the value lies within, calculated as 2^upperBound
@@ -47,7 +68,7 @@ func NewRangeProof(upperBound int, value *big.Int, randomness curves.Scalar) (*R
 	if err != nil {
 		return nil, err
 	}
-	
+
 	proof, err := prover.Prove(vScalar, randomness, upperBound, proofGenerators, transcript)
 	if err != nil {
 		return nil, err
@@ -64,7 +85,7 @@ func NewRangeProof(upperBound int, value *big.Int, randomness curves.Scalar) (*R
 // - proof: The range proof to verify
 // - ciphertext: The ciphertext for which we are verifying the range proof
 // - upperBound: The upper bound of the range we want to prove the value lies within, calculated as 2^upperBound
-func VerifyRangeProof(proof *RangeProof, ciphertext *elgamal.Ciphertext, upperBound int) (bool, error) {
+func VerifyRangeProof(proof *RangeProof, ciphertext *elgamal.Ciphertext, upperBound int, verifierFactory VerifierFactory) (bool, error) {
 	// Validate input
 	if proof == nil || proof.Proof == nil || proof.Randomness == nil {
 		return false, errors.New("invalid proof")
@@ -74,23 +95,46 @@ func VerifyRangeProof(proof *RangeProof, ciphertext *elgamal.Ciphertext, upperBo
 		return false, errors.New("invalid ciphertext")
 	}
 
-	curve := curves.ED25519()
-	// Verifier gets the proof, the commitment, the generators to verify the value is within the range
-	verifier, err := bulletproof.NewRangeVerifier(upperBound, getRangeDomain(), getIppDomain(), *curve)
-	if err != nil {
-		return false, err
-	}
-
 	eg := elgamal.NewTwistedElgamal()
 	g := eg.GetG()
 	h := eg.GetH()
 	proofGenerators := bulletproof.NewRangeProofGenerators(g, h, proof.Randomness)
-	verified, err := verifier.Verify(proof.Proof, ciphertext.C, proofGenerators, proof.UpperBound, getTranscript())
+
+	// Get the verifier from the cache, then verify.
+	verifier, err := verifierFactory.getVerifier(upperBound)
+	if err != nil {
+		return false, err
+	}
+	verified, err := verifier.Verify(proof.Proof, ciphertext.C, proofGenerators, upperBound, getTranscript())
 	if err != nil {
 		return false, err
 	}
 
 	return verified, nil
+}
+
+func (c *CachedRangeVerifierFactory) getVerifier(upperBound int) (*bulletproof.RangeVerifier, error) {
+	verifier, exists := c.verifiers[upperBound]
+	if exists {
+		return verifier, nil
+	}
+
+	verifier, err := c.delegator.getVerifier(upperBound)
+	if err != nil {
+		return nil, err
+	}
+
+	c.verifiers[upperBound] = verifier
+	return verifier, nil
+}
+
+func (e *Ed25519RangeVerifierFactory) getVerifier(upperBound int) (*bulletproof.RangeVerifier, error) {
+	curve := curves.ED25519()
+	verifier, err := bulletproof.NewRangeVerifier(upperBound, getRangeDomain(), getIppDomain(), *curve)
+	if err != nil {
+		return nil, err
+	}
+	return verifier, nil
 }
 
 func getRangeDomain() []byte {

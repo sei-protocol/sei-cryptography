@@ -14,6 +14,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type TestVerifier struct {
+	actualVerifier VerifierFactory
+	counter        int
+}
+
+func (t *TestVerifier) getVerifier(upperBound int) (*bulletproof.RangeVerifier, error) {
+	t.counter++
+	return t.actualVerifier.getVerifier(upperBound)
+}
+
 // Coinbase Kryptology's bulletproof package is used to generate range proofs
 func TestValueIsInRange(t *testing.T) {
 	curve := curves.ED25519()
@@ -164,7 +174,9 @@ func TestRangeProofs(t *testing.T) {
 	proof, err := NewRangeProof(n, value, gamma)
 	require.Nil(t, err)
 
-	verified, err := VerifyRangeProof(proof, ciphertext, n)
+	ed25519factory := Ed25519RangeVerifierFactory{}
+	verifierFactory := NewCachedRangeVerifierFactory(&ed25519factory)
+	verified, err := VerifyRangeProof(proof, ciphertext, n, verifierFactory)
 	require.NoError(t, err)
 	require.True(t, verified)
 
@@ -172,7 +184,7 @@ func TestRangeProofs(t *testing.T) {
 	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, big.NewInt(101))
 	require.Nil(t, err)
 
-	verified, err = VerifyRangeProof(proof, ciphertext101, n)
+	verified, err = VerifyRangeProof(proof, ciphertext101, n, verifierFactory)
 	require.Error(t, err)
 	require.False(t, verified)
 }
@@ -193,7 +205,10 @@ func TestRangeProofsLargeN(t *testing.T) {
 	proof, err := NewRangeProof(n, value, gamma)
 	require.Nil(t, err)
 
-	verified, err := VerifyRangeProof(proof, ciphertext, n)
+	ed25519factory := Ed25519RangeVerifierFactory{}
+	verifierFactory := NewCachedRangeVerifierFactory(&ed25519factory)
+
+	verified, err := VerifyRangeProof(proof, ciphertext, n, verifierFactory)
 	require.NoError(t, err)
 	require.True(t, verified)
 
@@ -201,7 +216,7 @@ func TestRangeProofsLargeN(t *testing.T) {
 	ciphertext101, _, err := eg.Encrypt(keyPair.PublicKey, big.NewInt(101))
 	require.Nil(t, err)
 
-	verified, err = VerifyRangeProof(proof, ciphertext101, n)
+	verified, err = VerifyRangeProof(proof, ciphertext101, n, verifierFactory)
 	require.Error(t, err)
 	require.False(t, verified)
 }
@@ -233,7 +248,10 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 	err = json.Unmarshal(marshaledProof, &unmarshaled)
 	require.NoError(t, err, "Unmarshaling should not produce an error")
 
-	verified, err := VerifyRangeProof(&unmarshaled, ciphertext, n)
+	ed25519factory := Ed25519RangeVerifierFactory{}
+	verifierFactory := NewCachedRangeVerifierFactory(&ed25519factory)
+
+	verified, err := VerifyRangeProof(&unmarshaled, ciphertext, n, verifierFactory)
 	require.NoError(t, err)
 	require.True(t, verified)
 }
@@ -275,37 +293,41 @@ func TestVerifyRangeProof_InvalidInput(t *testing.T) {
 	proof, err := NewRangeProof(64, value, gamma)
 	require.NoError(t, err)
 
+	ed25519factory := Ed25519RangeVerifierFactory{}
+	verifierFactory := NewCachedRangeVerifierFactory(&ed25519factory)
+
 	t.Run("Nil proof", func(t *testing.T) {
 		// Proof is nil
-		valid, err := VerifyRangeProof(nil, ciphertext, 64)
+		valid, err := VerifyRangeProof(nil, ciphertext, 64, verifierFactory)
 		require.EqualError(t, err, "invalid proof")
 		require.False(t, valid)
 	})
 
 	t.Run("Proof with nil fields", func(t *testing.T) {
-		valid, err := VerifyRangeProof(&RangeProof{}, ciphertext, 64)
+		valid, err := VerifyRangeProof(&RangeProof{}, ciphertext, 64, verifierFactory)
 		require.EqualError(t, err, "invalid proof")
 		require.False(t, valid)
 	})
 
 	t.Run("nil ciphertext", func(t *testing.T) {
 		// Proof is nil
-		valid, err := VerifyRangeProof(proof, nil, 64)
+		valid, err := VerifyRangeProof(proof, nil, 64, verifierFactory)
 		require.EqualError(t, err, "invalid ciphertext")
 		require.False(t, valid)
 	})
 
 	t.Run("Ciphertext with nil fields", func(t *testing.T) {
 		// Proof is nil
-		valid, err := VerifyRangeProof(proof, &elgamal.Ciphertext{}, 64)
+		valid, err := VerifyRangeProof(proof, &elgamal.Ciphertext{}, 64, verifierFactory)
 		require.EqualError(t, err, "invalid ciphertext")
 		require.False(t, valid)
 	})
 }
 
-func TestRangeProofsPerformance(t *testing.T) {
+// Test that it is fine to reuse verifiers.
+func TestRangeProofVerifierReuse(t *testing.T) {
 	value := big.NewInt(10)
-	n := 32 // the range is [0, 2^128]
+	n := 128 // the range is [0, 2^128]
 
 	privateKey, err := testutils.GenerateKey()
 	require.Nil(t, err, "Error generating private key")
@@ -316,12 +338,57 @@ func TestRangeProofsPerformance(t *testing.T) {
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
 
-	for i := 0; i < 100; i++ {
-		proof, err := NewRangeProof(n, value, gamma)
-		require.Nil(t, err)
+	proof, err := NewRangeProof(n, value, gamma)
+	require.Nil(t, err)
 
-		verified, err := VerifyRangeProof(proof, ciphertext, n)
-		require.NoError(t, err)
-		require.True(t, verified)
+	// Create a verifier with len 128 vector
+	ed25519factory := Ed25519RangeVerifierFactory{}
+	verifierFactory := NewCachedRangeVerifierFactory(&ed25519factory)
+
+	// Verify that this works normally for verifying a proof with the same upper bound
+	verified, err := VerifyRangeProof(proof, ciphertext, n, verifierFactory)
+	require.NoError(t, err)
+	require.True(t, verified)
+
+	// Verify that this still works on a different proof
+	proof, err = NewRangeProof(n, value, gamma)
+	require.Nil(t, err)
+
+	verified, err = VerifyRangeProof(proof, ciphertext, n, verifierFactory)
+	require.NoError(t, err)
+	require.True(t, verified)
+
+	// Verify that this still works on a proof on a different value
+	newValue := big.NewInt(10238032)
+	newCiphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, newValue)
+	proof, err = NewRangeProof(n, newValue, gamma)
+	require.Nil(t, err)
+
+	verified, err = VerifyRangeProof(proof, newCiphertext, n, verifierFactory)
+	require.NoError(t, err)
+	require.True(t, verified)
+}
+
+func TestRangeVerifierIsLazyLoadedFromCache(t *testing.T) {
+	upperBound := 64
+	curve := curves.ED25519()
+	expectedVerifier, err := bulletproof.NewRangeVerifier(upperBound, getRangeDomain(), getIppDomain(), *curve)
+	require.NoError(t, err)
+
+	testVerifier := &TestVerifier{
+		actualVerifier: &Ed25519RangeVerifierFactory{},
 	}
+	cachedVerifier := NewCachedRangeVerifierFactory(testVerifier)
+
+	// First invocation should call the actual verifier
+	actualVerifier, err := cachedVerifier.getVerifier(upperBound)
+	require.NoError(t, err)
+	require.Equal(t, expectedVerifier, actualVerifier)
+	require.Equal(t, 1, testVerifier.counter)
+
+	// Second invocation should return the cached verifier, so the counter should not increment
+	actualVerifier, err = cachedVerifier.getVerifier(upperBound)
+	require.NoError(t, err)
+	require.Equal(t, expectedVerifier, actualVerifier)
+	require.Equal(t, 1, testVerifier.counter)
 }
