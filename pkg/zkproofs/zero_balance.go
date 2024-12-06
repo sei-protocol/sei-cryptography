@@ -120,7 +120,8 @@ func (p *ZeroBalanceProof) validateContents() bool {
 		return false
 	}
 
-	if p.Yp.IsIdentity() || p.Yd.IsIdentity() || p.Z.IsZero() {
+	// We leave out p.Yd since it is valid for Yd to be zero (Ciphertext.D can be Identity point)
+	if p.Yp.IsIdentity() || p.Z.IsZero() {
 		return false
 	}
 

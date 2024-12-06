@@ -327,3 +327,36 @@ func TestVerifyCiphertextCommitmentEquality_InvalidInput(t *testing.T) {
 		require.False(t, valid, "Proof verification should fail for nil Pedersen commitment")
 	})
 }
+
+// Test that the proof is still valid for cases where Ciphertext.D is the identity point.
+func TestCiphertextCommitmentEqualityProof_IdentityD(t *testing.T) {
+	// Key generation
+	sourcePrivateKey, _ := testutils.GenerateKey()
+	eg := elgamal.NewTwistedElgamal()
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+
+	// Encrypt the source amount
+	sourceCiphertext, _, err := eg.Encrypt(sourceKeypair.PublicKey, big.NewInt(100))
+	assert.NoError(t, err, "Encryption should succeed for sourceCiphertext")
+
+	zeroCommitment, zeroRandomness, _ := eg.Encrypt(sourceKeypair.PublicKey, big.NewInt(0))
+	zeroCiphertext, _ := elgamal.SubtractCiphertext(sourceCiphertext, sourceCiphertext)
+	zeroScalar := curves.ED25519().Scalar.Zero()
+	// Generate the proof
+	proof, err := NewCiphertextCommitmentEqualityProof(
+		sourceKeypair,
+		zeroCiphertext,
+		&zeroRandomness,
+		&zeroScalar,
+	)
+	assert.NoError(t, err, "Proof generation should not fail")
+
+	// VerifyCipherCipherEquality the proof
+	valid := VerifyCiphertextCommitmentEquality(
+		proof,
+		&sourceKeypair.PublicKey,
+		zeroCiphertext,
+		&zeroCommitment.C,
+	)
+	assert.True(t, valid, "Proof verification should not fail")
+}
