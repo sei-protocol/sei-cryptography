@@ -295,3 +295,24 @@ func TestVerifyZeroProof_InvalidInput(t *testing.T) {
 	valid = VerifyZeroBalance(&invalidParamsProof, &keypair.PublicKey, ciphertext)
 	require.False(t, valid, "Verification should fail with invalid proof params")
 }
+
+func TestZeroBalanceProof_IdentityD(t *testing.T) {
+	// Setup keypair
+	privateKey, _ := testutils.GenerateKey()
+
+	eg := elgamal.NewTwistedElgamal()
+	keypair, _ := eg.KeyGen(*privateKey, TestDenom)
+
+	ciphertext, _, err := eg.Encrypt(keypair.PublicKey, big.NewInt(100))
+	require.NoError(t, err, "Failed to encrypt amount")
+
+	ciphertextZero, _ := elgamal.SubtractCiphertext(ciphertext, ciphertext)
+
+	// Generate ZeroBalanceProof
+	proof, err := NewZeroBalanceProof(keypair, ciphertextZero)
+	require.NoError(t, err, "Failed to generate proof")
+
+	// Verify the proof
+	valid := VerifyZeroBalance(proof, &keypair.PublicKey, ciphertextZero)
+	require.True(t, valid, "Proof should be valid")
+}

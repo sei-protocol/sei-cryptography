@@ -452,3 +452,40 @@ func TestVerifyCiphertextCiphertextEquality_InvalidInputs(t *testing.T) {
 		require.False(t, valid, "Proof verification should fail for proof params with zero value")
 	})
 }
+
+// Test that the proof is still valid for cases where Ciphertext.D is the identity point.
+func TestCiphertextCiphertextEqualityProof_IdentityD(t *testing.T) {
+	// Key generation
+	sourcePrivateKey, _ := testutils.GenerateKey()
+	destPrivateKey, _ := testutils.GenerateKey()
+	eg := elgamal.NewTwistedElgamal()
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
+
+	// Encrypt the source amount
+	sourceCiphertext, _, err := eg.Encrypt(sourceKeypair.PublicKey, big.NewInt(100))
+	assert.NoError(t, err, "Encryption should succeed for sourceCiphertext")
+
+	destCiphertextZero, destZeroRandomness, _ := eg.Encrypt(destinationKeypair.PublicKey, big.NewInt(0))
+	zeroCiphertext, _ := elgamal.SubtractCiphertext(sourceCiphertext, sourceCiphertext)
+	zeroScalar := curves.ED25519().Scalar.Zero()
+	// Generate the proof
+	proof, err := NewCiphertextCiphertextEqualityProof(
+		sourceKeypair,
+		&destinationKeypair.PublicKey,
+		zeroCiphertext,
+		&destZeroRandomness,
+		&zeroScalar,
+	)
+	assert.NoError(t, err, "Proof generation should not fail")
+
+	// VerifyCipherCipherEquality the proof
+	valid := VerifyCiphertextCiphertextEquality(
+		proof,
+		&sourceKeypair.PublicKey,
+		&destinationKeypair.PublicKey,
+		zeroCiphertext,
+		destCiphertextZero,
+	)
+	assert.True(t, valid, "Proof verification should not fail")
+}
