@@ -1,8 +1,6 @@
 module github.com/sei-protocol/sei-cryptography
 
-go 1.22
-
-toolchain go1.23.3
+go 1.21
 
 require (
 	github.com/bwesterb/go-ristretto v1.2.3
