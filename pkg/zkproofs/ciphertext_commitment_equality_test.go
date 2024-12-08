@@ -54,7 +54,7 @@ func TestCiphertextCommitmentEqualityProof(t *testing.T) {
 		tt := tt // Capture range variable
 		t.Run(tt.name, func(t *testing.T) {
 			// Key generation
-			sourcePrivateKey, _ := testutils.GenerateKey()
+			sourcePrivateKey := testutils.GenerateKey()
 			eg := elgamal.NewTwistedElgamal()
 			sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
@@ -121,7 +121,7 @@ func TestCiphertextCommitmentEqualityProof(t *testing.T) {
 }
 
 func TestCiphertextCommitmentEqualityProof_MarshalUnmarshalJSON(t *testing.T) {
-	sourcePrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
@@ -161,7 +161,7 @@ func TestCiphertextCommitmentEqualityProof_MarshalUnmarshalJSON(t *testing.T) {
 }
 
 func TestNewCiphertextCommitmentEqualityProof_InvalidInput(t *testing.T) {
-	sourcePrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
@@ -221,7 +221,7 @@ func TestNewCiphertextCommitmentEqualityProof_InvalidInput(t *testing.T) {
 }
 
 func TestVerifyCiphertextCommitmentEquality_InvalidInput(t *testing.T) {
-	sourcePrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
@@ -331,7 +331,7 @@ func TestVerifyCiphertextCommitmentEquality_InvalidInput(t *testing.T) {
 // Test that the proof is still valid for cases where Ciphertext.D is the identity point.
 func TestCiphertextCommitmentEqualityProof_IdentityD(t *testing.T) {
 	// Key generation
-	sourcePrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 

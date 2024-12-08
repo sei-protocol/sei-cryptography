@@ -11,8 +11,8 @@ import (
 )
 
 func TestPubKeyValidityProof(t *testing.T) {
-	privateKey, _ := testutils.GenerateKey()
-	altPrivateKey, _ := testutils.GenerateKey()
+	privateKey := testutils.GenerateKey()
+	altPrivateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
@@ -37,7 +37,7 @@ func TestPubKeyValidityProof(t *testing.T) {
 }
 
 func TestPubKeyValidityProof_MarshalUnmarshalJSON(t *testing.T) {
-	privateKey, _ := testutils.GenerateKey()
+	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
@@ -58,7 +58,7 @@ func TestPubKeyValidityProof_MarshalUnmarshalJSON(t *testing.T) {
 }
 
 func TestNewPubKeyValidityProof_InvalidInput(t *testing.T) {
-	privateKey, _ := testutils.GenerateKey()
+	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
@@ -70,8 +70,7 @@ func TestNewPubKeyValidityProof_InvalidInput(t *testing.T) {
 }
 
 func TestVerifyPubKeyValidityProof_InvalidInput(t *testing.T) {
-	privateKey, err := testutils.GenerateKey()
-	require.Nil(t, err)
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keys, err := eg.KeyGen(*privateKey, TestDenom)

@@ -42,8 +42,8 @@ func TestZeroBalanceProof(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup keypair
-			privateKey, _ := testutils.GenerateKey()
-			altPrivateKey, _ := testutils.GenerateKey()
+			privateKey := testutils.GenerateKey()
+			altPrivateKey := testutils.GenerateKey()
 
 			eg := elgamal.NewTwistedElgamal()
 			keypair, _ := eg.KeyGen(*privateKey, TestDenom)
@@ -75,7 +75,7 @@ func TestZeroBalanceProof(t *testing.T) {
 }
 
 func TestZeroBalanceProof_MarshalUnmarshalJSON(t *testing.T) {
-	privateKey, _ := testutils.GenerateKey()
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keypair, _ := eg.KeyGen(*privateKey, TestDenom)
@@ -100,8 +100,7 @@ func TestZeroBalanceProof_MarshalUnmarshalJSON(t *testing.T) {
 }
 
 func TestZeroBalanceProof_InvalidRandomness(t *testing.T) {
-	privateKey, err := testutils.GenerateKey()
-	require.NoError(t, err, "Failed to generate private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keypair, err := eg.KeyGen(*privateKey, TestDenom)
@@ -127,8 +126,7 @@ func TestZeroBalanceProof_InvalidRandomness(t *testing.T) {
 }
 
 func TestZeroBalanceProof_ExtremelyLargeScalars(t *testing.T) {
-	privateKey, err := testutils.GenerateKey()
-	require.NoError(t, err, "Failed to generate private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keypair, err := eg.KeyGen(*privateKey, TestDenom)
@@ -157,8 +155,7 @@ func TestZeroBalanceProof_ExtremelyLargeScalars(t *testing.T) {
 }
 
 func TestZeroBalanceProof_TamperedProof(t *testing.T) {
-	privateKey, err := testutils.GenerateKey()
-	require.NoError(t, err, "Failed to generate private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keypair, err := eg.KeyGen(*privateKey, TestDenom)
@@ -203,8 +200,7 @@ func TestZeroBalanceProof_InvalidInput(t *testing.T) {
 	require.Error(t, err, "Should return an error when ciphertext is nil")
 	require.Contains(t, err.Error(), "keypair is invalid")
 
-	privateKey, err := testutils.GenerateKey()
-	require.NoError(t, err, "Failed to generate private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keypair, _ := eg.KeyGen(*privateKey, TestDenom)
@@ -231,8 +227,7 @@ func TestZeroBalanceProof_InvalidInput(t *testing.T) {
 }
 
 func TestVerifyZeroProof_InvalidInput(t *testing.T) {
-	privateKey, err := testutils.GenerateKey()
-	require.NoError(t, err, "Failed to generate private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keypair, err := eg.KeyGen(*privateKey, TestDenom)
@@ -298,7 +293,7 @@ func TestVerifyZeroProof_InvalidInput(t *testing.T) {
 
 func TestZeroBalanceProof_IdentityD(t *testing.T) {
 	// Setup keypair
-	privateKey, _ := testutils.GenerateKey()
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keypair, _ := eg.KeyGen(*privateKey, TestDenom)

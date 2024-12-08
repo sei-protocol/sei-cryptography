@@ -55,15 +55,15 @@ func TestCiphertextCiphertextEqualityProof(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Key generation
-			sourcePrivateKey, _ := testutils.GenerateKey()
-			destPrivateKey, _ := testutils.GenerateKey()
+			sourcePrivateKey := testutils.GenerateKey()
+			destPrivateKey := testutils.GenerateKey()
 			eg := elgamal.NewTwistedElgamal()
 			sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 			destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
 
 			var actualDestinationPubkey *curves.Point
 			if tt.useDifferentPublicKey {
-				altDestPrivateKey, _ := testutils.GenerateKey()
+				altDestPrivateKey := testutils.GenerateKey()
 				// Generate an alternative keypair for destination
 				altDestinationKeypair, _ := eg.KeyGen(*altDestPrivateKey, TestDenom)
 				actualDestinationPubkey = &altDestinationKeypair.PublicKey
@@ -112,8 +112,8 @@ func TestCiphertextCiphertextEqualityProof(t *testing.T) {
 func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 	t.Run("Zero Amounts", func(t *testing.T) {
 		// Key generation
-		sourcePrivateKey, _ := testutils.GenerateKey()
-		destPrivateKey, _ := testutils.GenerateKey()
+		sourcePrivateKey := testutils.GenerateKey()
+		destPrivateKey := testutils.GenerateKey()
 		eg := elgamal.NewTwistedElgamal()
 		sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 		destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
@@ -152,8 +152,8 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 
 	t.Run("Maximum Amount", func(t *testing.T) {
 		// Key generation
-		sourcePrivateKey, _ := testutils.GenerateKey()
-		destPrivateKey, _ := testutils.GenerateKey()
+		sourcePrivateKey := testutils.GenerateKey()
+		destPrivateKey := testutils.GenerateKey()
 		eg := elgamal.NewTwistedElgamal()
 		sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 
@@ -194,8 +194,8 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 }
 
 func TestCiphertextCiphertextEqualityProof_UnmarshalJSON_Valid(t *testing.T) {
-	sourcePrivateKey, _ := testutils.GenerateKey()
-	destPrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
+	destPrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
@@ -241,8 +241,8 @@ func TestCiphertextCiphertextEqualityProof_UnmarshalJSON_Valid(t *testing.T) {
 
 // Invalid input tests for NewCiphertextCiphertextEqualityProof
 func TestNewCiphertextCiphertextEqualityProof_InvalidInputs(t *testing.T) {
-	sourcePrivateKey, _ := testutils.GenerateKey()
-	destPrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
+	destPrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
@@ -323,8 +323,8 @@ func TestNewCiphertextCiphertextEqualityProof_InvalidInputs(t *testing.T) {
 
 // Invalid input tests for VerifyCiphertextCiphertextEquality
 func TestVerifyCiphertextCiphertextEquality_InvalidInputs(t *testing.T) {
-	sourcePrivateKey, _ := testutils.GenerateKey()
-	destPrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
+	destPrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
@@ -456,8 +456,8 @@ func TestVerifyCiphertextCiphertextEquality_InvalidInputs(t *testing.T) {
 // Test that the proof is still valid for cases where Ciphertext.D is the identity point.
 func TestCiphertextCiphertextEqualityProof_IdentityD(t *testing.T) {
 	// Key generation
-	sourcePrivateKey, _ := testutils.GenerateKey()
-	destPrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
+	destPrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
 	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)

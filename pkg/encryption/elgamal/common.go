@@ -1,7 +1,6 @@
 package elgamal
 
 import (
-	"crypto/ecdsa"
 	"crypto/sha256"
 	"io"
 
@@ -13,11 +12,12 @@ import (
 const H_STRING = "gPt25pi0eDphSiXWu0BIeIvyVATCtwhslTqfqvNhW2c"
 
 // KeyGen generates a new key pair for the Twisted ElGamal encryption scheme.
-func (teg TwistedElGamal) KeyGen(privateKey ecdsa.PrivateKey, denom string) (*KeyPair, error) {
+// The private key is derived from the provided privateBytes and denom string. Ensure that the privateBytes passed is not exposed.
+func (teg TwistedElGamal) KeyGen(privateBytes []byte, denom string) (*KeyPair, error) {
 	// Fixed base point H
 	H := teg.GetH()
 
-	s, err := teg.getPrivateKey(privateKey, denom)
+	s, err := teg.getPrivateKeyFromBytes(privateBytes, denom)
 	if err != nil {
 		return nil, err
 	}
@@ -47,17 +47,12 @@ func (teg TwistedElGamal) GetH() curves.Point {
 	return teg.curve.Point.Hash(bytes)
 }
 
-// getPrivateKey derives a private key for the ElGamal cryptosystem.
-// It takes an ECDSA private key and a denomination string to generate the scalar.
-func (teg TwistedElGamal) getPrivateKey(privateKey ecdsa.PrivateKey, denom string) (curves.Scalar, error) {
-	// Convert the ECDSA private key to bytes
-	privKeyBytes := privateKey.D.Bytes()
-
+func (teg TwistedElGamal) getPrivateKeyFromBytes(privateBytes []byte, denom string) (curves.Scalar, error) {
 	// Hash the denom to get a salt.
 	salt := sha256.Sum256([]byte(denom))
 
 	// Create an HKDF reader using SHA-256
-	hkdf := hkdf.New(sha256.New, privKeyBytes, salt[:], []byte("elgamal scalar derivation"))
+	hkdf := hkdf.New(sha256.New, privateBytes, salt[:], []byte("elgamal scalar derivation"))
 
 	// Generate 64 bytes of randomness from HKDF output
 	var scalarBytes [64]byte

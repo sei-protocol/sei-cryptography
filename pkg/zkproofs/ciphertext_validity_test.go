@@ -12,8 +12,8 @@ import (
 )
 
 func TestValidityProof(t *testing.T) {
-	privateKey, _ := testutils.GenerateKey()
-	altPrivateKey, _ := testutils.GenerateKey()
+	privateKey := testutils.GenerateKey()
+	altPrivateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
@@ -63,7 +63,7 @@ func TestValidityProof(t *testing.T) {
 }
 
 func TestCiphertextValidityProof_MarshalUnmarshalJSON(t *testing.T) {
-	privateKey, _ := testutils.GenerateKey()
+	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
@@ -89,7 +89,7 @@ func TestCiphertextValidityProof_MarshalUnmarshalJSON(t *testing.T) {
 }
 
 func TestNewCiphertextValidityProof_InvalidInput(t *testing.T) {
-	privateKey, _ := testutils.GenerateKey()
+	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
@@ -135,7 +135,7 @@ func TestNewCiphertextValidityProof_InvalidInput(t *testing.T) {
 }
 
 func TestVerifyCiphertextValidityProof_Invalid_Input(t *testing.T) {
-	privateKey, _ := testutils.GenerateKey()
+	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	keys, _ := eg.KeyGen(*privateKey, TestDenom)
 
