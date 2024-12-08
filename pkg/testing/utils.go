@@ -1,12 +1,11 @@
 package testing
 
 import (
-	"crypto/ecdsa"
-	"crypto/rand"
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
+	"time"
 )
 
-// GenerateKey generates a new ECDSA key pair.
-func GenerateKey() (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
+// GenerateKey generates a new private bytes object used to dervie the keypair.
+func GenerateKey() *[]byte {
+	result := []byte(time.Now().String())
+	return &result
 }

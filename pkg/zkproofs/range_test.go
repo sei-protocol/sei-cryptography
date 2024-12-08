@@ -31,11 +31,10 @@ func TestValueIsInRange(t *testing.T) {
 	v, _ := curve.Scalar.SetBigInt(value)
 	n := 64 // the range is [0, 2^64]
 
-	privateKey, err := testutils.GenerateKey()
-	require.Nil(t, err, "Error generating private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
@@ -73,11 +72,10 @@ func TestRangeAttacksAreInfeasible(t *testing.T) {
 	v, _ := curve.Scalar.SetBigInt(value)
 	n := 64 // the range is [0, 2^64]
 
-	privateKey, err := testutils.GenerateKey()
-	require.Nil(t, err, "Error generating private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
@@ -162,11 +160,10 @@ func TestRangeProofs(t *testing.T) {
 	value := big.NewInt(100)
 	n := 64 // the range is [0, 2^64]
 
-	privateKey, err := testutils.GenerateKey()
-	require.Nil(t, err, "Error generating private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
@@ -193,11 +190,10 @@ func TestRangeProofsLargeN(t *testing.T) {
 	value := big.NewInt(100)
 	n := 128 // the range is [0, 2^128]
 
-	privateKey, err := testutils.GenerateKey()
-	require.Nil(t, err, "Error generating private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
@@ -227,11 +223,10 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 	value := big.NewInt(100)
 	n := 64 // the range is [0, 2^64]
 
-	privateKey, err := testutils.GenerateKey()
-	require.Nil(t, err, "Error generating private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
@@ -257,11 +252,10 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 }
 
 func TestRangeProofs_InvalidInput(t *testing.T) {
-	privateKey, err := testutils.GenerateKey()
-	require.Nil(t, err, "Error generating private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	_, gamma, _ := eg.Encrypt(keyPair.PublicKey, big.NewInt(10))
@@ -284,10 +278,10 @@ func TestRangeProofs_InvalidInput(t *testing.T) {
 }
 
 func TestVerifyRangeProof_InvalidInput(t *testing.T) {
-	privateKey, _ := testutils.GenerateKey()
+	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	value := big.NewInt(10)
-	keyPair, _ := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, _ := eg.KeyGen(*privateKey)
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
 
 	proof, err := NewRangeProof(64, value, gamma)
@@ -329,11 +323,10 @@ func TestRangeProofVerifierReuse(t *testing.T) {
 	value := big.NewInt(10)
 	n := 128 // the range is [0, 2^128]
 
-	privateKey, err := testutils.GenerateKey()
-	require.Nil(t, err, "Error generating private key")
+	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)

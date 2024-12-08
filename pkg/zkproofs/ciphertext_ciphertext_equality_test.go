@@ -55,17 +55,17 @@ func TestCiphertextCiphertextEqualityProof(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Key generation
-			sourcePrivateKey, _ := testutils.GenerateKey()
-			destPrivateKey, _ := testutils.GenerateKey()
+			sourcePrivateKey := testutils.GenerateKey()
+			destPrivateKey := testutils.GenerateKey()
 			eg := elgamal.NewTwistedElgamal()
-			sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
-			destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
+			sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
+			destinationKeypair, _ := eg.KeyGen(*destPrivateKey)
 
 			var actualDestinationPubkey *curves.Point
 			if tt.useDifferentPublicKey {
-				altDestPrivateKey, _ := testutils.GenerateKey()
+				altDestPrivateKey := testutils.GenerateKey()
 				// Generate an alternative keypair for destination
-				altDestinationKeypair, _ := eg.KeyGen(*altDestPrivateKey, TestDenom)
+				altDestinationKeypair, _ := eg.KeyGen(*altDestPrivateKey)
 				actualDestinationPubkey = &altDestinationKeypair.PublicKey
 			} else {
 				actualDestinationPubkey = &destinationKeypair.PublicKey
@@ -112,11 +112,11 @@ func TestCiphertextCiphertextEqualityProof(t *testing.T) {
 func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 	t.Run("Zero Amounts", func(t *testing.T) {
 		// Key generation
-		sourcePrivateKey, _ := testutils.GenerateKey()
-		destPrivateKey, _ := testutils.GenerateKey()
+		sourcePrivateKey := testutils.GenerateKey()
+		destPrivateKey := testutils.GenerateKey()
 		eg := elgamal.NewTwistedElgamal()
-		sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
-		destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
+		sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
+		destinationKeypair, _ := eg.KeyGen(*destPrivateKey)
 
 		amount := big.NewInt(0)
 
@@ -152,12 +152,12 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 
 	t.Run("Maximum Amount", func(t *testing.T) {
 		// Key generation
-		sourcePrivateKey, _ := testutils.GenerateKey()
-		destPrivateKey, _ := testutils.GenerateKey()
+		sourcePrivateKey := testutils.GenerateKey()
+		destPrivateKey := testutils.GenerateKey()
 		eg := elgamal.NewTwistedElgamal()
-		sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+		sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
 
-		destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
+		destinationKeypair, _ := eg.KeyGen(*destPrivateKey)
 
 		amount := big.NewInt(1 << 60) // A large amount to test scalability
 
@@ -194,11 +194,11 @@ func TestCiphertextCiphertextEqualityProof_EdgeCases(t *testing.T) {
 }
 
 func TestCiphertextCiphertextEqualityProof_UnmarshalJSON_Valid(t *testing.T) {
-	sourcePrivateKey, _ := testutils.GenerateKey()
-	destPrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
+	destPrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
-	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
+	destinationKeypair, _ := eg.KeyGen(*destPrivateKey)
 
 	amount := big.NewInt(100)
 
@@ -241,11 +241,11 @@ func TestCiphertextCiphertextEqualityProof_UnmarshalJSON_Valid(t *testing.T) {
 
 // Invalid input tests for NewCiphertextCiphertextEqualityProof
 func TestNewCiphertextCiphertextEqualityProof_InvalidInputs(t *testing.T) {
-	sourcePrivateKey, _ := testutils.GenerateKey()
-	destPrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
+	destPrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
-	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
+	destinationKeypair, _ := eg.KeyGen(*destPrivateKey)
 
 	amount := big.NewInt(100)
 
@@ -323,11 +323,11 @@ func TestNewCiphertextCiphertextEqualityProof_InvalidInputs(t *testing.T) {
 
 // Invalid input tests for VerifyCiphertextCiphertextEquality
 func TestVerifyCiphertextCiphertextEquality_InvalidInputs(t *testing.T) {
-	sourcePrivateKey, _ := testutils.GenerateKey()
-	destPrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
+	destPrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
-	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
+	destinationKeypair, _ := eg.KeyGen(*destPrivateKey)
 
 	amount := big.NewInt(100)
 
@@ -456,11 +456,11 @@ func TestVerifyCiphertextCiphertextEquality_InvalidInputs(t *testing.T) {
 // Test that the proof is still valid for cases where Ciphertext.D is the identity point.
 func TestCiphertextCiphertextEqualityProof_IdentityD(t *testing.T) {
 	// Key generation
-	sourcePrivateKey, _ := testutils.GenerateKey()
-	destPrivateKey, _ := testutils.GenerateKey()
+	sourcePrivateKey := testutils.GenerateKey()
+	destPrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
-	destinationKeypair, _ := eg.KeyGen(*destPrivateKey, TestDenom)
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
+	destinationKeypair, _ := eg.KeyGen(*destPrivateKey)
 
 	// Encrypt the source amount
 	sourceCiphertext, _, err := eg.Encrypt(sourceKeypair.PublicKey, big.NewInt(100))

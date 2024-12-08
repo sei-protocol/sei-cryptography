@@ -1,9 +1,9 @@
 package encryption
 
 import (
-	"crypto/ecdsa"
 	"math/big"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -16,57 +16,37 @@ const (
 func TestGetAESKey(t *testing.T) {
 	tests := []struct {
 		name         string
-		privateKey   *ecdsa.PrivateKey
+		privateKey   []byte
 		denom        string
 		expectEqual  bool
-		anotherKey   *ecdsa.PrivateKey
+		anotherKey   []byte
 		anotherDenom string
 	}{
 		{
 			name:        "Deterministic Key Generation",
-			privateKey:  generateTestKey(t),
-			denom:       TestDenom,
+			privateKey:  generateTestKey(),
 			expectEqual: true,
 		},
 		{
-			name:         "Different Denom (Salt) Generates Different Key",
-			privateKey:   generateTestKey(t),
-			denom:        TestDenom,
-			anotherDenom: TestDenom + "1",
-			expectEqual:  false,
-		},
-		{
-			name:         "Different Denom (Salt) of same length Generates Different Key",
-			privateKey:   generateTestKey(t),
-			denom:        TestDenom + "1",
-			anotherDenom: TestDenom + "2",
-			expectEqual:  false,
-		},
-		{
 			name:        "Different PrivateKey Generates Different Key",
-			privateKey:  generateTestKey(t),
-			denom:       TestDenom + "N",
-			anotherKey:  generateTestKey(t),
+			privateKey:  generateTestKey(),
+			anotherKey:  generateTestKey(),
 			expectEqual: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			aesPK, err := GetAESKey(*tt.privateKey, tt.denom)
+			aesPK, err := GetAESKey(tt.privateKey)
 			require.Nil(t, err, "Should not have error here")
 
 			if tt.anotherKey != nil {
-				aesPKDiff, err := GetAESKey(*tt.anotherKey, tt.denom)
+				aesPKDiff, err := GetAESKey(tt.anotherKey)
 				require.Nil(t, err)
 				require.NotEqual(t, aesPK, aesPKDiff, "PK should be different for different private keys")
-			} else if tt.anotherDenom != "" {
-				aesPKDiff, err := GetAESKey(*tt.privateKey, tt.anotherDenom)
-				require.Nil(t, err)
-				require.NotEqual(t, aesPK, aesPKDiff, "PK should be different for different salts")
 			} else {
 
-				aesPKAgain, err := GetAESKey(*tt.privateKey, tt.denom)
+				aesPKAgain, err := GetAESKey(tt.privateKey)
 				require.Nil(t, err, "Should not have error here")
 				if tt.expectEqual {
 					require.Equal(t, aesPK, aesPKAgain, "PK should be deterministically generated")
@@ -80,16 +60,8 @@ func TestGetAESKey(t *testing.T) {
 
 func TestGetAESKey_InvalidInput(t *testing.T) {
 	// Nil private key
-	_, err := GetAESKey(*new(ecdsa.PrivateKey), TestDenom)
+	_, err := GetAESKey([]byte{})
 	require.Error(t, err, "Should return error for nil private key")
-
-	invalidPrivateKey := &ecdsa.PrivateKey{ /* Invalid key data */ }
-	_, err = GetAESKey(*invalidPrivateKey, TestDenom)
-	require.Error(t, err, "Should return error for invalid private key")
-
-	validPrivateKey := generateTestKey(t)
-	_, err = GetAESKey(*validPrivateKey, "")
-	require.Error(t, err, "Should not allow empty denom(salt)")
 }
 
 func TestAESEncryptionDecryption(t *testing.T) {
@@ -218,8 +190,7 @@ func TestDecryptAESGCM_InvalidCiphertext(t *testing.T) {
 }
 
 // Helper function to generate a test private key
-func generateTestKey(t *testing.T) *ecdsa.PrivateKey {
-	privateKey, err := GenerateKey()
-	require.Nil(t, err, "Failed to generate private key")
-	return privateKey
+func generateTestKey() []byte {
+	randomString := time.Now()
+	return []byte(randomString.String())
 }
