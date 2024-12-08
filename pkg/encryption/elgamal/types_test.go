@@ -13,7 +13,7 @@ func TestCiphertext_MarshalJSON(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 	eg := NewTwistedElgamal()
 
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	value := big.NewInt(108)
 	ciphertext, _, _ := eg.Encrypt(keys.PublicKey, value)

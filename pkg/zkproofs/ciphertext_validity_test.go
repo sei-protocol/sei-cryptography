@@ -16,8 +16,8 @@ func TestValidityProof(t *testing.T) {
 	altPrivateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keys, _ := eg.KeyGen(*privateKey, TestDenom)
-	altKeys, _ := eg.KeyGen(*altPrivateKey, TestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
+	altKeys, _ := eg.KeyGen(*altPrivateKey)
 
 	message12 := big.NewInt(12)
 	ciphertext12, randomness12, err := eg.Encrypt(keys.PublicKey, message12)
@@ -65,7 +65,7 @@ func TestValidityProof(t *testing.T) {
 func TestCiphertextValidityProof_MarshalUnmarshalJSON(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	keys, _ := eg.KeyGen(*privateKey, TestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	message12 := big.NewInt(12)
 	ciphertext12, randomness12, _ := eg.Encrypt(keys.PublicKey, message12)
@@ -91,7 +91,7 @@ func TestCiphertextValidityProof_MarshalUnmarshalJSON(t *testing.T) {
 func TestNewCiphertextValidityProof_InvalidInput(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	keys, _ := eg.KeyGen(*privateKey, TestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	amount := big.NewInt(100)
 	// Encrypt the amount using source and destination public keys
@@ -137,7 +137,7 @@ func TestNewCiphertextValidityProof_InvalidInput(t *testing.T) {
 func TestVerifyCiphertextValidityProof_Invalid_Input(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	keys, _ := eg.KeyGen(*privateKey, TestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	amount := big.NewInt(100)
 	// Encrypt the amount using source and destination public keys

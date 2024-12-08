@@ -56,7 +56,7 @@ func TestCiphertextCommitmentEqualityProof(t *testing.T) {
 			// Key generation
 			sourcePrivateKey := testutils.GenerateKey()
 			eg := elgamal.NewTwistedElgamal()
-			sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+			sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
 
 			// Encrypt the source amount
 			sourceCiphertext, sourceRandomness, err := eg.Encrypt(sourceKeypair.PublicKey, tt.sourceAmount)
@@ -123,7 +123,7 @@ func TestCiphertextCommitmentEqualityProof(t *testing.T) {
 func TestCiphertextCommitmentEqualityProof_MarshalUnmarshalJSON(t *testing.T) {
 	sourcePrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
 
 	amount := big.NewInt(232436)
 	// Encrypt the source amount
@@ -163,7 +163,7 @@ func TestCiphertextCommitmentEqualityProof_MarshalUnmarshalJSON(t *testing.T) {
 func TestNewCiphertextCommitmentEqualityProof_InvalidInput(t *testing.T) {
 	sourcePrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
 
 	amount := big.NewInt(100)
 
@@ -223,7 +223,7 @@ func TestNewCiphertextCommitmentEqualityProof_InvalidInput(t *testing.T) {
 func TestVerifyCiphertextCommitmentEquality_InvalidInput(t *testing.T) {
 	sourcePrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
 
 	amount := big.NewInt(100)
 
@@ -333,7 +333,7 @@ func TestCiphertextCommitmentEqualityProof_IdentityD(t *testing.T) {
 	// Key generation
 	sourcePrivateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey, TestDenom)
+	sourceKeypair, _ := eg.KeyGen(*sourcePrivateKey)
 
 	// Encrypt the source amount
 	sourceCiphertext, _, err := eg.Encrypt(sourceKeypair.PublicKey, big.NewInt(100))

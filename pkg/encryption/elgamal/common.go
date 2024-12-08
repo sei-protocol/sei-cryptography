@@ -13,11 +13,11 @@ const H_STRING = "gPt25pi0eDphSiXWu0BIeIvyVATCtwhslTqfqvNhW2c"
 
 // KeyGen generates a new key pair for the Twisted ElGamal encryption scheme.
 // The private key is derived from the provided privateBytes and denom string. Ensure that the privateBytes passed is not exposed.
-func (teg TwistedElGamal) KeyGen(privateBytes []byte, denom string) (*KeyPair, error) {
+func (teg TwistedElGamal) KeyGen(privateBytes []byte) (*KeyPair, error) {
 	// Fixed base point H
 	H := teg.GetH()
 
-	s, err := teg.getPrivateKeyFromBytes(privateBytes, denom)
+	s, err := teg.getPrivateKeyFromBytes(privateBytes)
 	if err != nil {
 		return nil, err
 	}
@@ -47,9 +47,9 @@ func (teg TwistedElGamal) GetH() curves.Point {
 	return teg.curve.Point.Hash(bytes)
 }
 
-func (teg TwistedElGamal) getPrivateKeyFromBytes(privateBytes []byte, denom string) (curves.Scalar, error) {
+func (teg TwistedElGamal) getPrivateKeyFromBytes(privateBytes []byte) (curves.Scalar, error) {
 	// Hash the denom to get a salt.
-	salt := sha256.Sum256([]byte(denom))
+	salt := sha256.Sum256([]byte("elgamal scalar derivation salt"))
 
 	// Create an HKDF reader using SHA-256
 	hkdf := hkdf.New(sha256.New, privateBytes, salt[:], []byte("elgamal scalar derivation"))

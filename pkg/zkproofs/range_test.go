@@ -34,7 +34,7 @@ func TestValueIsInRange(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
@@ -75,7 +75,7 @@ func TestRangeAttacksAreInfeasible(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
@@ -163,7 +163,7 @@ func TestRangeProofs(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
@@ -193,7 +193,7 @@ func TestRangeProofsLargeN(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
@@ -226,7 +226,7 @@ func TestRangeProofsWithMarshaling(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
@@ -255,7 +255,7 @@ func TestRangeProofs_InvalidInput(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	_, gamma, _ := eg.Encrypt(keyPair.PublicKey, big.NewInt(10))
@@ -281,7 +281,7 @@ func TestVerifyRangeProof_InvalidInput(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
 	value := big.NewInt(10)
-	keyPair, _ := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, _ := eg.KeyGen(*privateKey)
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)
 
 	proof, err := NewRangeProof(64, value, gamma)
@@ -326,7 +326,7 @@ func TestRangeProofVerifierReuse(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, TestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err, "Error generating key pair")
 
 	ciphertext, gamma, _ := eg.Encrypt(keyPair.PublicKey, value)

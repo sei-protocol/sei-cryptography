@@ -15,8 +15,8 @@ func TestPubKeyValidityProof(t *testing.T) {
 	altPrivateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keys, _ := eg.KeyGen(*privateKey, TestDenom)
-	altKeys, _ := eg.KeyGen(*altPrivateKey, TestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
+	altKeys, _ := eg.KeyGen(*altPrivateKey)
 
 	// Prove knowledge of the private key
 	proof, err := NewPubKeyValidityProof(keys.PublicKey, keys.PrivateKey)
@@ -39,7 +39,7 @@ func TestPubKeyValidityProof(t *testing.T) {
 func TestPubKeyValidityProof_MarshalUnmarshalJSON(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	keys, _ := eg.KeyGen(*privateKey, TestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	original, err := NewPubKeyValidityProof(keys.PublicKey, keys.PrivateKey)
 	require.NoError(t, err, "Proof generation should not produce an error")
@@ -60,7 +60,7 @@ func TestPubKeyValidityProof_MarshalUnmarshalJSON(t *testing.T) {
 func TestNewPubKeyValidityProof_InvalidInput(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 	eg := elgamal.NewTwistedElgamal()
-	keys, _ := eg.KeyGen(*privateKey, TestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	_, err := NewPubKeyValidityProof(nil, keys.PrivateKey)
 	require.Error(t, err, "Generating proof with nil public key should produce an error")
@@ -73,7 +73,7 @@ func TestVerifyPubKeyValidityProof_InvalidInput(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 
 	eg := elgamal.NewTwistedElgamal()
-	keys, err := eg.KeyGen(*privateKey, TestDenom)
+	keys, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err)
 
 	// Prove knowledge of the private key

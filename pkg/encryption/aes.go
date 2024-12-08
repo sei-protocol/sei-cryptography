@@ -14,19 +14,16 @@ import (
 	"golang.org/x/crypto/hkdf"
 )
 
-// GetAESKey derives a 32-byte AES key using the provided bytes and denomination string.
+// GetAESKey derives a 32-byte AES key using the provided bytes.
 // The bytes can be anything, but we strongly suggest using something that is private to the use, such as the ecdas Private Key or a signed message.
-// It employs HKDF with SHA-256, using the private key bytes and a SHA-256 hash of the denom as salt.
-func GetAESKey(privateBytes []byte, denom string) ([]byte, error) {
-	if len(denom) == 0 {
-		return nil, fmt.Errorf("denom is empty")
-	}
+// It employs HKDF with SHA-256, using the private key bytes.
+func GetAESKey(privateBytes []byte) ([]byte, error) {
 	if len(privateBytes) == 0 {
 		return nil, fmt.Errorf("bytes is empty")
 	}
 
 	// Use a SHA-256 hash of the denom string as the salt
-	salt := sha256.Sum256([]byte(denom))
+	salt := sha256.Sum256([]byte("aes key derivation salt"))
 
 	// Create an HKDF reader using SHA-256
 	hkdf := hkdf.New(sha256.New, privateBytes, salt[:], []byte("aes key derivation"))

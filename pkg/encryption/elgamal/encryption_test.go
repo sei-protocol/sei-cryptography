@@ -16,29 +16,17 @@ func TestKeyGeneration(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 
 	eg := NewTwistedElgamal()
-	keyPair, err := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keyPair, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err)
 
 	// Test that keyPair is deterministically generated
-	keyPairAgain, err := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keyPairAgain, err := eg.KeyGen(*privateKey)
 	require.Nil(t, err)
 	require.Equal(t, keyPair, keyPairAgain, "PK should be deterministically generated")
 
-	// Test that changing the salt should generate a different key
-	altDenom := "factory/sei1239081236470/testToken1"
-	keyPairDiffSalt, err := eg.KeyGen(*privateKey, altDenom)
-	require.Nil(t, err)
-	require.NotEqual(t, keyPair, keyPairDiffSalt, "PK should be different for different salt")
-
-	// Test same thing for salt of same length
-	altDenom = "factory/sei1239081236470/testTokeN"
-	keyPairDiffSalt, err = eg.KeyGen(*privateKey, altDenom)
-	require.Nil(t, err)
-	require.NotEqual(t, keyPair, keyPairDiffSalt, "PK should be different for different salt")
-
 	// Test that different privateKey should generate different PK
 	altPrivateKey := testutils.GenerateKey()
-	keyPairDiffPK, err := eg.KeyGen(*altPrivateKey, altDenom)
+	keyPairDiffPK, err := eg.KeyGen(*altPrivateKey)
 	require.Nil(t, err)
 	require.NotEqual(t, keyPair, keyPairDiffPK, "PK should be different for different ESDCA Private Key")
 }
@@ -49,8 +37,8 @@ func TestEncryptionDecryption(t *testing.T) {
 
 	eg := NewTwistedElgamal()
 
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
-	altKeys, _ := eg.KeyGen(*altPrivateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
+	altKeys, _ := eg.KeyGen(*altPrivateKey)
 
 	// Happy Path
 	value := big.NewInt(108)
@@ -84,7 +72,7 @@ func Test48BitEncryptionDecryption(t *testing.T) {
 	privateKey := testutils.GenerateKey()
 
 	eg := NewTwistedElgamal()
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	// First decrypt a 32 bit number (sets up the decryptor for a later test)
 	value := big.NewInt(108092)
@@ -126,8 +114,8 @@ func TestAddCiphertext(t *testing.T) {
 
 	eg := NewTwistedElgamal()
 
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
-	altKeys, _ := eg.KeyGen(*altPrivateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
+	altKeys, _ := eg.KeyGen(*altPrivateKey)
 
 	// Happy Path
 	value1 := big.NewInt(30842)
@@ -170,7 +158,7 @@ func TestAddCiphertext(t *testing.T) {
 func TestTwistedElGamal_InvalidCiphertext(t *testing.T) {
 	eg := NewTwistedElgamal()
 	privateKey := testutils.GenerateKey()
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	invalidCt := &Ciphertext{}
 
@@ -185,7 +173,7 @@ func TestTwistedElGamal_NilPrivateKey(t *testing.T) {
 
 	// Generate a valid key pair for comparison
 	privateKey := testutils.GenerateKey()
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	// Encrypt a value with a valid public key
 	value := big.NewInt(12345)
@@ -204,7 +192,7 @@ func TestTwistedElGamal_EncryptDecryptWithRand(t *testing.T) {
 
 	// Generate a valid key pair for comparison
 	privateKey := testutils.GenerateKey()
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	message := big.NewInt(555555555)
 	randomFactor := curves.ED25519().Scalar.Random(rand.Reader)
@@ -222,7 +210,7 @@ func TestTwistedElGamal_EncryptMessageTwice(t *testing.T) {
 
 	// Generate a valid key pair for comparison
 	privateKey := testutils.GenerateKey()
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	message := big.NewInt(555555555)
 	randomFactor := curve.Scalar.Random(rand.Reader)
@@ -238,7 +226,7 @@ func TestTwistedElGamal_DecryptWithZeroBits(t *testing.T) {
 
 	// Generate a valid key pair for comparison
 	privateKey := testutils.GenerateKey()
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	message := big.NewInt(555555555)
 	randomFactor := curve.Scalar.Random(rand.Reader)
@@ -264,7 +252,7 @@ func TestTwistedElGamal_EncryptInvalidRandomFactor(t *testing.T) {
 
 	// Generate a valid key pair for comparison
 	privateKey := testutils.GenerateKey()
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	// Test with nil public key
 	_, _, err := eg.encryptWithRand(keys.PublicKey, big.NewInt(12345), nil)
@@ -277,7 +265,7 @@ func TestTwistedElGamal_EncryptBoundaryValues(t *testing.T) {
 
 	// Generate a valid key pair for comparison
 	privateKey := testutils.GenerateKey()
-	keys, _ := eg.KeyGen(*privateKey, DefaultTestDenom)
+	keys, _ := eg.KeyGen(*privateKey)
 
 	// Test with the smallest possible value (0)
 	_, _, err := eg.Encrypt(keys.PublicKey, big.NewInt(0))
