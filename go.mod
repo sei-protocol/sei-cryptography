@@ -24,4 +24,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/coinbase/kryptology => github.com/sei-protocol/coinbase-kryptology v0.0.0-20241015231206-08f61b7965cd
+replace github.com/coinbase/kryptology => github.com/sei-protocol/coinbase-kryptology v0.0.0-20241210171554-278d19024e41
