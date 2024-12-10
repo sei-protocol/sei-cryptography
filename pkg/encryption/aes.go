@@ -15,18 +15,15 @@ import (
 )
 
 // GetAESKey derives a 32-byte AES key using the provided bytes.
-// The bytes can be anything, but we strongly suggest using something that is private to the use, such as the ecdas Private Key or a signed message.
 // It employs HKDF with SHA-256, using the private key bytes.
+// No additional salt is added here so ensure that the privateBytes are already salted or hashed.
 func GetAESKey(privateBytes []byte) ([]byte, error) {
 	if len(privateBytes) == 0 {
 		return nil, fmt.Errorf("bytes is empty")
 	}
 
-	// Use a SHA-256 hash of the denom string as the salt
-	salt := sha256.Sum256([]byte("aes key derivation salt"))
-
 	// Create an HKDF reader using SHA-256
-	hkdf := hkdf.New(sha256.New, privateBytes, salt[:], []byte("aes key derivation"))
+	hkdf := hkdf.New(sha256.New, privateBytes, nil, []byte("aes key derivation"))
 
 	// Allocate a 32-byte array for the AES key
 	aesKey := make([]byte, 32)

@@ -47,12 +47,11 @@ func (teg TwistedElGamal) GetH() curves.Point {
 	return teg.curve.Point.Hash(bytes)
 }
 
+// Creates an el gamal private key from the provided bytes.
+// No additional salt is added here so ensure that the privateBytes are already salted or hashed.
 func (teg TwistedElGamal) getPrivateKeyFromBytes(privateBytes []byte) (curves.Scalar, error) {
-	// Hash the denom to get a salt.
-	salt := sha256.Sum256([]byte("elgamal scalar derivation salt"))
-
 	// Create an HKDF reader using SHA-256
-	hkdf := hkdf.New(sha256.New, privateBytes, salt[:], []byte("elgamal scalar derivation"))
+	hkdf := hkdf.New(sha256.New, privateBytes, nil, []byte("elgamal scalar derivation"))
 
 	// Generate 64 bytes of randomness from HKDF output
 	var scalarBytes [64]byte
