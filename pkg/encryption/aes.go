@@ -3,7 +3,6 @@ package encryption
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -12,33 +11,19 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/crypto/secp256k1"
-
 	"golang.org/x/crypto/hkdf"
 )
 
-// GenerateKey generates a new ECDSA private key using the secp256k1 curve.
-func GenerateKey() (*ecdsa.PrivateKey, error) {
-	return ecdsa.GenerateKey(secp256k1.S256(), rand.Reader)
-}
-
-// GetAESKey derives a 32-byte AES key using the provided ECDSA private key and denomination string.
-// It employs HKDF with SHA-256, using the ECDSA private key bytes and a SHA-256 hash of the denom as salt.
-func GetAESKey(privKey ecdsa.PrivateKey, denom string) ([]byte, error) {
-	if privKey.D == nil {
-		return nil, fmt.Errorf("private key D is nil")
+// GetAESKey derives a 32-byte AES key using the provided bytes.
+// It employs HKDF with SHA-256, using the private key bytes.
+// No additional salt is added here so ensure that the privateBytes are already salted or hashed.
+func GetAESKey(privateBytes []byte) ([]byte, error) {
+	if len(privateBytes) == 0 {
+		return nil, fmt.Errorf("bytes is empty")
 	}
-	if len(denom) == 0 {
-		return nil, fmt.Errorf("denom is empty")
-	}
-	// Convert the ECDSA private key to bytes
-	privKeyBytes := privKey.D.Bytes()
-
-	// Use a SHA-256 hash of the denom string as the salt
-	salt := sha256.Sum256([]byte(denom))
 
 	// Create an HKDF reader using SHA-256
-	hkdf := hkdf.New(sha256.New, privKeyBytes, salt[:], []byte("aes key derivation"))
+	hkdf := hkdf.New(sha256.New, privateBytes, nil, []byte("aes key derivation"))
 
 	// Allocate a 32-byte array for the AES key
 	aesKey := make([]byte, 32)
