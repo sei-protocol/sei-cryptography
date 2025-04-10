@@ -30,6 +30,8 @@ type TransferProofs struct {
 	SenderTransferAmountHiValidityProof     *zkproofs.CiphertextValidityProof           `json:"sender_transfer_amount_hi_validity_proof"`
 	RecipientTransferAmountLoValidityProof  *zkproofs.CiphertextValidityProof           `json:"recipient_transfer_amount_lo_validity_proof"`
 	RecipientTransferAmountHiValidityProof  *zkproofs.CiphertextValidityProof           `json:"recipient_transfer_amount_hi_validity_proof"`
+	TransferAmountLoRangeProof              *zkproofs.RangeProof                        `json:"transfer_amount_lo_range_proof"`
+	TransferAmountHiRangeProof              *zkproofs.RangeProof                        `json:"transfer_amount_hi_range_proof"`
 	RemainingBalanceRangeProof              *zkproofs.RangeProof                        `json:"remaining_balance_range_proof"`
 	RemainingBalanceEqualityProof           *zkproofs.CiphertextCommitmentEqualityProof `json:"remaining_balance_equality_proof"`
 	TransferAmountLoEqualityProof           *zkproofs.CiphertextCiphertextEqualityProof `json:"transfer_amount_lo_equality_proof"`
@@ -173,6 +175,17 @@ func NewTransfer(
 		return &Transfer{}, err
 	}
 
+	// We also need to generate Range Proofs to prove that the TransferAmountLo is less than 2^16 and TransferAmountHi is less than 2^32.
+	senderLoRangeProof, err := zkproofs.NewRangeProof(16, loBitsBigInt, senderLoBitsRandomness)
+	if err != nil {
+		return &Transfer{}, err
+	}
+
+	senderHiRangeProof, err := zkproofs.NewRangeProof(32, hiBitsBigInt, senderHiBitsRandomness)
+	if err != nil {
+		return &Transfer{}, err
+	}
+
 	// Secondly, we generate a Range Proof to prove that the PedersonCommitment to the new balance is greater than zero.
 	newBalanceRangeProof, err := zkproofs.NewRangeProof(128, newBalance, newBalanceRandomness)
 	if err != nil {
@@ -211,6 +224,8 @@ func NewTransfer(
 		RemainingBalanceEqualityProof:           commitmentCiphertextEqualityProof,
 		TransferAmountLoEqualityProof:           recipientParams.TransferAmountLoEqualityProof,
 		TransferAmountHiEqualityProof:           recipientParams.TransferAmountHiEqualityProof,
+		TransferAmountLoRangeProof:              senderLoRangeProof,
+		TransferAmountHiRangeProof:              senderHiRangeProof,
 	}
 
 	// Lastly we generate the Auditor parameters, if required.
