@@ -47,7 +47,7 @@ func NewApplyPendingBalance(
 	fmt.Println("TEST 3")
 
 	// Calculate the pending balances that we need to add to the available balance.
-	loBalance, err := teg.Decrypt(keyPair.PrivateKey, currentPendingBalanceLo, elgamal.MaxBits32)
+	loBalance, err := teg.DecryptLargeNumber(keyPair.PrivateKey, currentPendingBalanceLo, elgamal.MaxBits32)
 	if err != nil {
 		return nil, err
 	}
