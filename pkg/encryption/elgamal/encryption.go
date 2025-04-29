@@ -1,9 +1,11 @@
 package elgamal
 
 import (
+	"context"
 	crand "crypto/rand"
 	"fmt"
 	"math/big"
+	"sync"
 
 	"github.com/bwesterb/go-ristretto"
 	"github.com/coinbase/kryptology/pkg/core/curves"
@@ -168,6 +170,133 @@ func (teg TwistedElGamal) DecryptLargeNumber(sk curves.Scalar, ct *Ciphertext, m
 	}
 
 	return nil, fmt.Errorf("failed to find value")
+}
+
+func (teg TwistedElGamal) DecryptParallel(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits, numWorkers int) (*big.Int, error) {
+	// Validate inputs
+	if sk == nil {
+		return nil, fmt.Errorf("invalid private key")
+	}
+	if ct == nil || ct.C == nil || ct.D == nil {
+		return nil, fmt.Errorf("invalid ciphertext")
+	}
+
+	G := teg.GetG()
+
+	// Compute shared component s * D
+	sD := ct.D.Mul(sk)
+
+	// result = C - sD = x * G
+	result := ct.C.Sub(sD)
+
+	// Ensure we have the precomputed x_hi * G table
+	if _, ok := teg.maxMapping[maxBits]; !ok {
+		teg.updateIterMap(maxBits)
+	}
+
+	// The size of the x_lo search space (lower half of the bits)
+	iMax := uint64(1<<(uint(maxBits)/2) - 1)
+
+	// Divide the work evenly among workers
+	chunkSize := (iMax + uint64(numWorkers) - 1) / uint64(numWorkers)
+
+	// Channels to return result or errors from goroutines
+	resultChan := make(chan *big.Int, 1) // buffer size 1 so first result can exit early
+	errChan := make(chan error, numWorkers)
+
+	// Context allows early cancellation once a result is found
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// WaitGroup ensures we wait for all goroutines to complete
+	var wg sync.WaitGroup
+
+	// Launch one goroutine per chunk of the x_lo search space
+	for w := 0; w < numWorkers; w++ {
+		start := uint64(w) * chunkSize
+		end := start + chunkSize
+		if end > iMax {
+			end = iMax
+		}
+
+		wg.Add(1)
+		go func(start, end uint64) {
+			defer wg.Done()
+
+			for i := start; i < end; i++ {
+				// If another goroutine already found the result, exit early
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+
+				// Try x_lo = i
+				xValue := new(big.Int).SetUint64(i)
+				x, _ := teg.curve.Scalar.SetBigInt(xValue)
+
+				// Compute x_lo * G
+				xLoG := G.Mul(x)
+
+				// Subtract from result: result - x_lo * G = x_hi * G
+				test := result.Sub(xLoG)
+
+				// Check if this result is in the x_hi lookup table
+				compressedKey := getCompressedKeyString(test)
+				if xHiMultiplied, ok := teg.mapping[compressedKey]; ok && xHiMultiplied <= (1<<maxBits) {
+					// Reconstruct full x = x_hi * 2^shift + x_lo
+					xComputed := xHiMultiplied + i
+
+					// Send result and cancel other goroutines
+					resultChan <- big.NewInt(int64(xComputed))
+					cancel()
+					return
+				}
+			}
+
+			// If this worker didn’t find a match, report an error (optional)
+			errChan <- fmt.Errorf("worker range [%d, %d) did not find a match", start, end)
+		}(start, end)
+	}
+
+	// Wait in a separate goroutine to clean up channels
+	go func() {
+		wg.Wait()
+		close(resultChan)
+		close(errChan)
+	}()
+
+	// Main goroutine waits for first result or completion
+	select {
+	case res := <-resultChan:
+		return res, nil // success
+	case <-ctx.Done():
+		return nil, fmt.Errorf("decryption cancelled")
+	case err := <-errChan:
+		// Optional: could wait for all errors and return a combined error
+		return nil, err
+	}
+}
+
+func (teg TwistedElGamal) DecryptLargeNumberParallel(sk curves.Scalar, ct *Ciphertext, maxBits MaxBits, numWorkers int) (*big.Int, error) {
+	if maxBits > MaxBits48 {
+		return nil, fmt.Errorf("maxBits must be at most 48, provided (%d)", maxBits)
+	}
+
+	// Try progressively larger ranges, short-circuiting on first success
+	values := []MaxBits{MaxBits16, MaxBits32, MaxBits40, MaxBits48}
+	for _, bits := range values {
+		if bits > maxBits {
+			return nil, fmt.Errorf("no value found within maxBits limit")
+		}
+
+		res, err := teg.DecryptParallel(sk, ct, bits, numWorkers)
+		if err == nil {
+			return res, nil
+		}
+	}
+
+	return nil, fmt.Errorf("failed to find value in any configured maxBits range")
 }
 
 func getCompressedKeyString(key curves.Point) string {
